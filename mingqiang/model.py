@@ -6,7 +6,7 @@ from mingqiang import db
 # 计数表
 class Counters(db.Model):
     # 设置结构体表格名称
-    __tablename__ = 'Counters'
+    __tablename__ = 'House'
 
     # 设定结构体对应表格的字段
     id = db.Column(db.Integer, primary_key=True)
