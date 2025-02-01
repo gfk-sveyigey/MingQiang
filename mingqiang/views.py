@@ -21,46 +21,24 @@ def index():
     # return render_template('index.html')
     return make_err_response(400, "Invalid URL.")
 
-@app.route("/api/login", methods = ["POST"])
+@app.route("/api/login", methods = ["GET"])
 def login():
-    code = request.json.get("code")
-
-    if not code:
-        return jsonify({"errorMsg": "No code."}), 400
-    
-    url = "https://api.weixin.qq.com/sns/jscode2session"
-    data = {
-        "appid": APP_ID,
-        "secret": APP_SECRET,
-        "js_code": code,
-        "grant_type": "authorization_code"
-    }
-
-    res = requests.get(url, params = data)
-    data = res.json()
-    app.logger.warning(res.text)
-    app.logger.warning(request.headers)
-
-    if "errcode" in data:
-        return jsonify({"status": "error", "errorMsg": data["errmsg"]}), 500
-    
     # 获取openid和session_key
-    openid = data.get("openid")
-    session_key = data.get("session_key")
+    openid = request.headers["X-Wx-Openid"]
 
     with app.app_context():
         try:
             user = services.user.find_with_openid(openid)
             if user is None:
-                user = services.user.new(openid = openid, session_key = session_key)
+                user = services.user.new(openid = openid)
                 code = 201
             else:
-                user = services.user.update(user, session_key = session_key)
+                # user = services.user.update(user)
                 code = 200
         except Exception as e:
             app.logger.warning(e)
 
-        return jsonify({"status": "success", "openid": openid, "session_key": session_key, "user": services.user.response(user)}), code
+        return jsonify({"status": "success", "openid": openid, "user": services.user.response(user)}), code
 
 @app.route("/api/user/info", methods = ["GET", "POST"])
 def user_info():

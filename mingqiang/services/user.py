@@ -16,8 +16,8 @@ def get_all() -> list:
     users = User.query.all()
     return users
 
-def new(openid: str, session_key: str) -> User:
-    new_user = User(id = user_id_generator.generate(), openid = openid, session_key = session_key)
+def new(openid: str) -> User:
+    new_user = User(id = user_id_generator.generate(), openid = openid)
     db.session.add(new_user)
     db.session.commit()
     return new_user
@@ -84,14 +84,12 @@ def get_role(user: Union[int, User], group: Union[int, Group]) -> int:
     ugship = UserGroupShip.query.filter_by(user_id = user, group_id = group).first()
     return ugship.role
 
-def update(user: Union[int, User], openid: str = None, session_key: str = None, nickname: str = None, avatar: str = None, supervisor: bool = None, group_id: int = None, role: int = None):
+def update(user: Union[int, User], openid: str = None, nickname: str = None, avatar: str = None, supervisor: bool = None, group_id: int = None, role: int = None):
     if type(user) == int:
         user: User = get(user)
     if user:
         if openid is not None:
             user.openid = openid
-        if session_key is not None:
-            user.session_key = session_key
         if nickname is not None:
             user.nickname = nickname
         if avatar is not None:
