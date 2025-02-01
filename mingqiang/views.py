@@ -154,7 +154,7 @@ def house_onsale():
             houses = services.house.get_onsale()
             houses = [{
                 "id": str(house.id),
-                "cover": json.loads(house.images)[0]["tempFilePath"],
+                "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
                 "region": house.address_region.split(",")[3],
@@ -175,7 +175,7 @@ def house_onrent():
             houses = services.house.get_onrent()
             houses = [{
                 "id": str(house.id),
-                "cover": json.loads(house.images)[0]["tempFilePath"],
+                "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
                 "region": house.address_region[3],
