@@ -28,7 +28,7 @@ def login():
     if not code:
         return jsonify({"errorMsg": "No code."}), 400
     
-    url = "http://api.weixin.qq.com/sns/jscode2session"
+    url = "https://api.weixin.qq.com/sns/jscode2session"
     data = {
         "appid": APP_ID,
         "secret": APP_SECRET,
@@ -38,6 +38,8 @@ def login():
 
     res = requests.get(url, params = data)
     data = res.json()
+    app.logger.warning(res.text)
+    app.logger.warning(request.headers)
 
     if "errcode" in data:
         return jsonify({"status": "error", "errorMsg": data["errmsg"]}), 500
