@@ -51,7 +51,6 @@ def login():
             user = services.user.find_with_openid(openid)
             if user is None:
                 user = services.user.new(openid = openid, session_key = session_key)
-                services.user.group_join(user_id = user.id, group_id = 1)
                 code = 201
             else:
                 user = services.user.update(user, session_key = session_key)
