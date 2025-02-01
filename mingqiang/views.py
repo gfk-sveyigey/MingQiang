@@ -157,7 +157,7 @@ def house_onsale():
                 "cover": json.loads(house.images)[0]["tempFilePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region[3],
+                "region": house.address_region.split(",")[3],
                 "price": f"{house.sale_price}万元",
             } for house in houses]
             response = {"houses": houses}
