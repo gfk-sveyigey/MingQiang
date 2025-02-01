@@ -11,7 +11,6 @@ class User(db.Model):
     # 设定字段
     id = Column(BigInteger, primary_key = True, unique = True, nullable = False)  # 使用19位SnowId
     openid = Column(String(32), nullable = False)  # 微信用户唯一标识
-    session_key = Column(String(32), nullable = False)
     nickname = Column(String(32), nullable = False, default = "未命名")
     avatar = Column(String(128), nullable = False, default = "")
     supervisor = Column(Boolean, nullable = False, default = False)
