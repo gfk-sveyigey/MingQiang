@@ -3,7 +3,9 @@
     {
       "name": "mingqiang",
       "domain": "",
-      "ip": ""
+      "ip": "",
+      "mode": "compose",
+      "containerId": "2afaa9f76e4b0497331624d09b2a43db10ab6ac115b1659fba748175a766bf06"
     }
   ],
   "config": {
@@ -26,9 +28,9 @@
         }
       ],
       "envParams": {
-        "MYSQL_USERNAME": "",
-        "MYSQL_PASSWORD": "",
-        "MYSQL_ADDRESS": ""
+        "MYSQL_USERNAME": "mingqiang",
+        "MYSQL_PASSWORD": "Lgq984512!",
+        "MYSQL_ADDRESS": "sh-cynosdbmysql-grp-3rogqg0s.sql.tencentcdb.com:24358"
       },
       "customLogs": "stdout",
       "initialDelaySeconds": 2,
