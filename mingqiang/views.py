@@ -160,7 +160,7 @@ def house_onsale():
                 "region": house.address_region.split(",")[3],
                 "price": f"{house.sale_price}万元",
             } for house in houses]
-            response = {"houses": houses}
+            response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
 @app.route("/api/house/onrent", methods = ["GET"])
@@ -178,10 +178,10 @@ def house_onrent():
                 "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region[3],
+                "region": house.address_region.split(",")[3],
                 "price": f"{house.rent_price}万元/月",
             } for house in houses]
-            response = {"houses": houses}
+            response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
 @app.route("/api/house/removed", methods = ["GET"])
@@ -199,10 +199,10 @@ def house_removed():
                 "cover": json.loads(house.images)[0]["tempFilePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region[3],
+                "region": house.address_region.split(",")[3],
                 "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
             } for house in houses]
-            response = {"houses": houses}
+            response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
 @app.route("/api/house/remove", methods = ["POST"])
@@ -277,6 +277,66 @@ def house_update():
             services.house.update(data, int(uid))
             response = {"status": "success"}
         return jsonify(response), 200
+
+@app.route("/api/house/recommend", methods = ["POST"])
+def house_recommend():
+    with app.app_context():
+        if not request.data:
+            house_type = 0
+        else:
+            house_type = request.get_json().get("houseType", 0)
+        houses = services.house.recommend(house_type, 20)
+        houses = [{
+            "id": str(house.id),
+            "cover": json.loads(house.images)[0]["tempFilePath"],
+            "title": house.title,
+            "area": str(house.area_building),
+            "region": house.address_region.split(",")[3],
+            "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+        } for house in houses]
+        response = {"status": "success", "houses": houses}
+        return jsonify(response), 200
+    
+@app.route("/api/house/latest", methods = ["POST"])
+def house_latest():
+    with app.app_context():
+        if not request.data:
+            house_type = 0
+        else:
+            house_type = request.get_json().get("houseType", 0)
+        houses = services.house.latest(house_type, 20)
+        houses = [{
+            "id": str(house.id),
+            "cover": json.loads(house.images)[0]["tempFilePath"],
+            "title": house.title,
+            "area": str(house.area_building),
+            "region": house.address_region.split(",")[3],
+            "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+        } for house in houses]
+        response = {"status": "success", "houses": houses}
+        return jsonify(response), 200
+
+@app.route("/api/house/search", methods = ["POST"])
+def house_search():
+    with app.app_context():
+        if not request.data:
+            option = {}
+        else:
+            option = request.get_json().get("option", {})
+            app.logger.warning(option)
+        houses = services.house.search(**option)
+        houses = [{
+            "id": str(house.id),
+            "cover": json.loads(house.images)[0]["tempFilePath"],
+            "title": house.title,
+            "area": str(house.area_building),
+            "region": house.address_region.split(",")[3],
+            "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+        } for house in houses]
+        response = {"status": "success", "houses": houses}
+        return jsonify(response), 200
+
+
 
 
 

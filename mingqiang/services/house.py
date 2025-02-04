@@ -2,6 +2,7 @@ from mingqiang.model import User, Group, House
 from mingqiang import db, app, house_id_generator, user_id_generator
 from mingqiang import services
 from typing import Union
+from sqlalchemy import or_, and_
 import json
 
 def get(id: int) -> Union[House, None]:
@@ -118,3 +119,76 @@ def update(data: dict, uid: int) -> House:
     house.raw = json.dumps(data, ensure_ascii = False)
     db.session.commit()
     return house
+
+def recommend(house_type: int = 0, numbers: int = 10) -> list:
+    if house_type == 0:
+        houses = House.query.order_by(House.id.desc()).limit(numbers).all()
+    else:
+        houses = House.query.filter(House.house_type == house_type).order_by(House.id.desc()).limit(numbers).all()
+    return houses
+
+def latest(house_type: int = 0, numbers: int = 20) -> list:
+    if house_type == 0:
+        houses = House.query.order_by(House.id.desc()).limit(numbers).all()
+    else:
+        houses = House.query.filter(House.house_type == house_type).order_by(House.id.desc()).limit(numbers).all()
+    return houses
+
+def search(
+        keyword: str = "",
+        region: str = "",
+        house_type: int = 0,
+        transaction_type: int = 0,
+        area_min: int = 0,
+        area_max: int = 0,
+        price_min: int = 0,
+        price_max: int = 0,
+        offset: int = 0,
+        number: int = 20,
+        **kwargs
+):
+    houses = House.query
+
+    if keyword != "":
+        houses = houses.filter(House.title.like(f"%{keyword}%"))
+    if region != "":
+        houses = houses.filter(House.address_region.like(f"%{region}%"))
+    if house_type != 0:
+        houses = houses.filter(House.house_type == house_type)
+    if transaction_type != 0:
+        houses = houses.filter(House.transaction_type == transaction_type)
+    if area_min != 0:
+        houses = houses.filter(House.area_usable >= area_min)
+    if area_max != 0 and area_max != area_min:
+        houses = houses.filter(House.area_usable <= area_max)
+    if transaction_type == 1:
+        if price_min != 0:
+            houses = houses.filter(House.sale_price >= price_min)
+        if price_max != 0 and price_max != price_min:
+            houses = houses.filter(House.sale_price <= price_max)
+    elif transaction_type == 2:
+        if price_min != 0:
+            houses = houses.filter(House.rent_price >= price_min)
+        if price_max != 0 and price_max != price_min:
+            houses = houses.filter(House.rent_price <= price_max)
+    else:
+        if price_min != 0:
+            houses = houses.filter(
+                or_(
+                    and_(House.transaction_type == 1, House.sale_price >= price_min),
+                    and_(House.transaction_type == 2, House.rent_price >= price_min),
+                )
+            )
+        if price_max != 0 and price_max != price_min:
+            houses = houses.filter(
+                or_(
+                    and_(House.transaction_type == 1, House.sale_price <= price_max),
+                    and_(House.transaction_type == 2, House.rent_price <= price_max),
+                )
+            )
+    return houses.offset(offset).limit(number).all()
+
+
+
+
+
