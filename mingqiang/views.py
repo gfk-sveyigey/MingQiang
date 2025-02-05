@@ -148,10 +148,10 @@ def house_onsale():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无查询权限"}
         else:
-            houses = services.house.get_onsale()
+            houses = services.house.get_onsale(int(uid))
             houses = [{
                 "id": str(house.id),
                 "cover": json.loads(house.images)[0]["filePath"],
@@ -159,6 +159,7 @@ def house_onsale():
                 "area": str(house.area_building),
                 "region": house.address_region.split(",")[3],
                 "price": f"{house.sale_price}万元",
+                "transaction_type": house.transaction_type,
             } for house in houses]
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
@@ -169,10 +170,10 @@ def house_onrent():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无查询权限"}
         else:
-            houses = services.house.get_onrent()
+            houses = services.house.get_onrent(int(uid))
             houses = [{
                 "id": str(house.id),
                 "cover": json.loads(house.images)[0]["filePath"],
@@ -180,6 +181,7 @@ def house_onrent():
                 "area": str(house.area_building),
                 "region": house.address_region.split(",")[3],
                 "price": f"{house.rent_price}万元/月",
+                "transaction_type": house.transaction_type,
             } for house in houses]
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
@@ -190,10 +192,10 @@ def house_removed():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无查询权限"}
         else:
-            houses = services.house.get_removed()
+            houses = services.house.get_removed(int(uid))
             houses = [{
                 "id": str(house.id),
                 "cover": json.loads(house.images)[0]["filePath"],
@@ -201,6 +203,7 @@ def house_removed():
                 "area": str(house.area_building),
                 "region": house.address_region.split(",")[3],
                 "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+                "transaction_type": house.transaction_type,
             } for house in houses]
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
@@ -210,9 +213,9 @@ def house_remove():
     with app.app_context():
         uid = request.headers.get("Uid", None)
         if uid is None:
-            response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
-            response = {"status": "error", "errorMsg": "无查询权限"}
+            response = {"status": "error", "errorMsg": "无操作权限"}
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
+            response = {"status": "error", "errorMsg": "无操作权限"}
         elif not request.data:
             response = {"status": "error", "errorMsg":"缺少参数:houseId"}
         else:

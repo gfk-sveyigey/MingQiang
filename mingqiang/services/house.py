@@ -51,17 +51,51 @@ def new(data: dict, uid: int) -> House:
     db.session.commit()
     return house
 
-def get_onsale() -> list:
-    houses = House.query.filter(House.transaction_type == 1, House.removed == False).all()
+def get_onsale(user: Union[int, User]) -> list:
+    if type(user) == int:
+        user = services.user.get(user)
+
+    if user.supervisor:
+        houses = House.query.filter(House.transaction_type == 1, House.removed == False).all()
+    elif services.user.is_administrator(user):
+        groups = [group['id'] for group in services.user.group_manageable(user)]
+        houses = House.query.filter(House.transaction_type == 1, House.removed == False, House.group_id in groups)
+    elif len(user.groups) != 0:
+        houses = House.query.filter(House.transaction_type == 1, House.removed == False, House.owner_id == user.id)
+    else:
+        houses = []
     return houses
 
-def get_onrent() -> list:
-    houses = House.query.filter(House.transaction_type == 2, House.removed == False).all()
+def get_onrent(user: Union[int, User]) -> list:
+    if type(user) == int:
+        user = services.user.get(user)
+
+    if user.supervisor:
+        houses = House.query.filter(House.transaction_type == 2, House.removed == False).all()
+    elif services.user.is_administrator(user):
+        groups = [group['id'] for group in services.user.group_manageable(user)]
+        houses = House.query.filter(House.transaction_type == 2, House.removed == False, House.group_id in groups)
+    elif len(user.groups) != 0:
+        houses = House.query.filter(House.transaction_type == 2, House.removed == False, House.owner_id == user.id)
+    else:
+        houses = []
     return houses
 
-def get_removed() -> list:
-    houses = House.query.filter(House.removed == True).all()
+def get_removed(user: Union[int, User]) -> list:
+    if type(user) == int:
+        user = services.user.get(user)
+
+    if user.supervisor:
+        houses = House.query.filter(House.removed == True).all()
+    elif services.user.is_administrator(user):
+        groups = [group['id'] for group in services.user.group_manageable(user)]
+        houses = House.query.filter(House.removed == True, House.group_id in groups)
+    elif len(user.groups) != 0:
+        houses = House.query.filter(House.removed == True, House.owner_id == user.id)
+    else:
+        houses = []
     return houses
+
 
 def remove(house: Union[int, House]):
     if type(house) == int:
