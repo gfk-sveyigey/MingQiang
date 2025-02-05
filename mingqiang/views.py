@@ -196,7 +196,7 @@ def house_removed():
             houses = services.house.get_removed()
             houses = [{
                 "id": str(house.id),
-                "cover": json.loads(house.images)[0]["tempFilePath"],
+                "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
                 "region": house.address_region.split(",")[3],
@@ -288,11 +288,12 @@ def house_recommend():
         houses = services.house.recommend(house_type, 20)
         houses = [{
             "id": str(house.id),
-            "cover": json.loads(house.images)[0]["tempFilePath"],
+            "cover": json.loads(house.images)[0]["filePath"],
             "title": house.title,
             "area": str(house.area_building),
-            "region": house.address_region.split(",")[3],
+            "region": house.office_name if house.house_type == 2 else house.address_region.split(",")[3],
             "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+            "transaction_type": house.transaction_type,
         } for house in houses]
         response = {"status": "success", "houses": houses}
         return jsonify(response), 200
@@ -307,11 +308,12 @@ def house_latest():
         houses = services.house.latest(house_type, 20)
         houses = [{
             "id": str(house.id),
-            "cover": json.loads(house.images)[0]["tempFilePath"],
+            "cover": json.loads(house.images)[0]["filePath"],
             "title": house.title,
             "area": str(house.area_building),
-            "region": house.address_region.split(",")[3],
+            "region": house.office_name if (house.house_type == 2) else house.address_region.split(",")[3],
             "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+            "transaction_type": house.transaction_type,
         } for house in houses]
         response = {"status": "success", "houses": houses}
         return jsonify(response), 200
@@ -327,11 +329,12 @@ def house_search():
         houses = services.house.search(**option)
         houses = [{
             "id": str(house.id),
-            "cover": json.loads(house.images)[0]["tempFilePath"],
+            "cover": json.loads(house.images)[0]["filePath"],
             "title": house.title,
             "area": str(house.area_building),
-            "region": house.address_region.split(",")[3],
+            "region": house.office_name if (house.house_type == 2) else house.address_region.split(",")[3],
             "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+            "transaction_type": house.transaction_type,
         } for house in houses]
         response = {"status": "success", "houses": houses}
         return jsonify(response), 200
