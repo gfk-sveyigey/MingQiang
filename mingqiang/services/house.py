@@ -32,7 +32,7 @@ def new(data: dict, uid: int) -> House:
         area_building = float(data["area"]["buildingArea"]) if data["area"]["buildingArea"] != "" else 0,
         area_usable = float(data["area"]["usableArea"]) if data["area"]["usableArea"] != "" else 0,
         floor = data["floor"]["selectedIndex"],
-        floor_data = data["floor"]["data"]["total"] + "," + data["floor"]["data"]["number"] + ",".join(data["firstFloor"].values()),
+        floor_data = data["floor"]["data"]["total"] + "," + data["floor"]["data"]["number"] + "," + data["floor"]["data"]["where"] + ",".join(data["firstFloor"].values()),
         decoration = data["decoration"],
         ownership = data["ownership"],
         rent_price = float(data["rentPrice"]) if data["rentPrice"] != "" else 0,
@@ -100,7 +100,7 @@ def update(data: dict, uid: int) -> House:
     house.area_building = float(data["area"]["buildingArea"]) if data["area"]["buildingArea"] != "" else 0
     house.area_usable = float(data["area"]["usableArea"]) if data["area"]["usableArea"] != "" else 0
     house.floor = data["floor"]["selectedIndex"]
-    house.floor_data = data["floor"]["data"]["total"] + "," + data["floor"]["data"]["number"] + ",".join(data["firstFloor"].values())
+    house.floor_data = data["floor"]["data"]["total"] + "," + data["floor"]["data"]["number"] + "," + data["floor"]["data"]["where"] + ",".join(data["firstFloor"].values())
     house.decoration = data["decoration"]
     house.ownership = data["ownership"]
     house.rent_price = float(data["rentPrice"]) if data["rentPrice"] != "" else 0

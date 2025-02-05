@@ -1,7 +1,7 @@
 import os
 
 # 版本
-version = "0.0.11"
+version = "0.0.12"
 
 # 是否开启debug模式
 DEBUG = False
