@@ -13,7 +13,10 @@ def get_all() -> list:
     houses = House.query.all()
     return houses
 
-def new(data: dict, uid: int) -> House:
+def new_id() -> int:
+    return house_id_generator.generate()
+
+def new(data: dict) -> House:
     house = House(
         id = int(data["id"]),
         title = data["title"],
@@ -44,7 +47,7 @@ def new(data: dict, uid: int) -> House:
         images = json.dumps(data["images"]),
         videos = json.dumps(data["videos"]),
         group = services.group.get(data["groupId"]),
-        owner = services.user.get(int(data["ownerId"]) if data["ownerId"] != "" else uid),
+        owner = services.user.get(int(data["ownerId"])),
         raw = json.dumps(data, ensure_ascii = False),
     )
     db.session.add(house)
@@ -95,7 +98,6 @@ def get_removed(user: Union[int, User]) -> list:
     else:
         houses = []
     return houses
-
 
 def remove(house: Union[int, House]):
     if type(house) == int:
@@ -181,10 +183,13 @@ def search(
         number: int = 20,
         **kwargs
 ):
-    houses = House.query
+    houses = House.query.filter(House.removed == False).all()
 
     if keyword != "":
-        houses = houses.filter(House.title.like(f"%{keyword}%"))
+        houses = houses.filter(or_(
+            House.title.like(f"%{keyword}%"),
+            House.office_name.like(f"%{keyword}%")
+        ))
     if region != "":
         houses = houses.filter(House.address_region.like(f"%{region}%"))
     if house_type != 0:
@@ -222,7 +227,13 @@ def search(
             )
     return houses.offset(offset).limit(number).all()
 
-
-
-
+def detail(house: Union[int, House]):
+    if type(house) == int:
+        house: House = get(house)
+    raw = json.loads(house.raw)
+    raw["address"].pop("required")
+    raw["area"].pop("required")
+    raw["floor"].pop("required")
+    raw.pop("homeOwner")
+    return raw
 

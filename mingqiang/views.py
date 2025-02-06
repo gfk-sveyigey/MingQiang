@@ -1,25 +1,13 @@
-from datetime import datetime
 from flask import render_template, request, jsonify
-from mingqiang import db, app, house_id_generator, user_id_generator
-import requests
+from mingqiang import app
 import json
 
-from mingqiang.model import User, Group, House
-from mingqiang.response import make_succ_response, make_err_response
 from mingqiang import services
 
 
-# AppID
-APP_ID = "wx32626721437a9a62"
-
-# AppSecret
-APP_SECRET = "4b5ad7be1d38cbd6ac6d4cacbb50673d"
-
-
-@app.route('/')
-def index():
-    # return render_template('index.html')
-    return make_err_response(400, "Invalid URL.")
+# @app.route("/", methods = ["GET"])
+# def index():
+#     return jsonify({}), 200
 
 @app.route("/api/login", methods = ["GET"])
 def login():
@@ -101,17 +89,24 @@ def user_update_nickname():
 # 未完成
 @app.route("/api/user/all", methods = ["GET", "POST"])
 def user_all():
-    response = {"status": "error", "errorMsg": "未开放接口"}
-    return jsonify(response), 200
+    with app.app_context():
+        response = {"status": "error", "errorMsg": "未开放接口"}
+        return jsonify(response), 200
+
+
 
 # 未完成
-@app.route("/api/house/preview/<house_id>", methods = ["GET"])
-def house(house_id):
+@app.route("/api/house/detail/<house_id>", methods = ["GET"])
+def house_detail(house_id):
     with app.app_context():
-        app.logger.warning(house_id)
-
+        house = services.house.get(int(house_id))
+        if house is None:
+            response = {"status": "error", "errorMsg": "Id无效"}
+        else:
+            detail = services.house.detail(house)
+            response = {"status": "success", "detail": detail}
         
-        return jsonify(), 200
+        return jsonify(response), 200
 
 @app.route("/api/house/newid", methods = ["GET"])
 def house_newid():
@@ -122,7 +117,7 @@ def house_newid():
         elif not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无操作权限"}
         else:
-            house_id = house_id_generator.generate()
+            house_id = services.house.new_id()
             response = {"status": "success", "id": str(house_id)}
         return jsonify(response), 200
 
@@ -138,7 +133,7 @@ def house_new():
             response = {"status": "error", "errorMsg": "缺少参数"}
         else:
             data = request.get_json()
-            services.house.new(data, int(uid))
+            services.house.new(data)
             response = {"status": "success"}
         return jsonify(response), 200
     
@@ -252,7 +247,7 @@ def house_raw():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无查询权限"}
         elif not request.data:
             response = {"status": "error", "errorMsg":"缺少参数:houseId"}
@@ -279,6 +274,7 @@ def house_update():
             data = request.get_json()
             services.house.update(data, int(uid))
             response = {"status": "success"}
+
         return jsonify(response), 200
 
 @app.route("/api/house/recommend", methods = ["POST"])
@@ -347,14 +343,6 @@ def house_search():
 
 
 
-@app.route("/api/house/detailed/<house_id>", methods = ["GET"])
-def house_detailed(house_id):
-
-    with app.app_context():
-        app.logger.warning(house_id)
-
-        
-        return jsonify(), 200
 
 @app.route("/api/group/manageable", methods = ["GET"])
 def group_manageable():
