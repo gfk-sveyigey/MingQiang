@@ -183,7 +183,7 @@ def search(
         number: int = 20,
         **kwargs
 ):
-    houses = House.query.filter(House.removed == False).all()
+    houses = House.query.filter(House.removed == False)
 
     if keyword != "":
         houses = houses.filter(or_(

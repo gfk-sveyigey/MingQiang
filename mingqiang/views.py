@@ -324,17 +324,19 @@ def house_search():
             option = {}
         else:
             option = request.get_json().get("option", {})
-            app.logger.warning(option)
-        houses = services.house.search(**option)
-        houses = [{
-            "id": str(house.id),
-            "cover": json.loads(house.images)[0]["filePath"],
-            "title": house.title,
-            "area": str(house.area_building),
-            "region": house.office_name if (house.house_type == 2) else house.address_region.split(",")[3],
-            "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
-            "transaction_type": house.transaction_type,
-        } for house in houses]
+        try:
+            houses = services.house.search(**option)
+            houses = [{
+                "id": str(house.id),
+                "cover": json.loads(house.images)[0]["filePath"],
+                "title": house.title,
+                "area": str(house.area_building),
+                "region": house.office_name if (house.house_type == 2) else house.address_region.split(",")[3],
+                "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+                "transaction_type": house.transaction_type,
+            } for house in houses]
+        except Exception as e:
+            houses = []
         response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
