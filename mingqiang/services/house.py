@@ -1,4 +1,4 @@
-from mingqiang.model import User, Group, House
+from mingqiang.model import User, Group, House, UserCollectionShip
 from mingqiang import db, app, house_id_generator, user_id_generator
 from mingqiang import services
 from typing import Union
@@ -74,12 +74,12 @@ def get_onrent(user: Union[int, User]) -> list:
         user = services.user.get(user)
 
     if user.supervisor:
-        houses = House.query.filter(House.transaction_type == 2, House.removed == False).all()
+        houses = House.query.filter(House.transaction_type == 2, House.removed is False).all()
     elif services.user.is_administrator(user):
         groups = [group['id'] for group in services.user.group_manageable(user)]
-        houses = House.query.filter(House.transaction_type == 2, House.removed == False, House.group_id in groups)
+        houses = House.query.filter(House.transaction_type == 2, House.removed is False, House.group_id in groups)
     elif len(user.groups) != 0:
-        houses = House.query.filter(House.transaction_type == 2, House.removed == False, House.owner_id == user.id)
+        houses = House.query.filter(House.transaction_type == 2, House.removed is False, House.owner_id == user.id)
     else:
         houses = []
     return houses
@@ -227,13 +227,38 @@ def search(
             )
     return houses.offset(offset).limit(number).all()
 
-def detail(house: Union[int, House]):
+def detail(house: Union[int, House], user: Union[int, User]):
     if type(house) == int:
         house: House = get(house)
+    if type(user) == int:
+        user: User = services.user.get(user)
     raw = json.loads(house.raw)
     raw["address"].pop("required")
     raw["area"].pop("required")
     raw["floor"].pop("required")
     raw.pop("homeOwner")
+    if user is None:
+        raw["hearted"] = 0
+    else:
+        raw["hearted"] = 1 if house.id in [collention.id for collention in user.collections] else 2
     return raw
+
+# def heart(user: Union[int, User], house: Union[int, House]):
+#     if type(user) == int:
+#         user: User = services.user.get(user)
+#     if type(house) == int:
+#         house: House = get(house)
+#     user.collections.append(house)
+#     db.session.commit()
+#     return
+
+# def cancel_heart(user: Union[int, User], house: Union[int, House]):
+#     if type(user) == int:
+#         user: User = services.user.get(user)
+#     if type(house) == int:
+#         house: House = get(house)
+#     UserCollectionShip.query.filter_by(user_id = user.id, house_id = user.id).delete()
+#     db.session.commit()
+#     return
+
 

@@ -86,6 +86,26 @@ def user_update_nickname():
                 response = {"status": "success"}
         return jsonify(response), 200
 
+@app.route("/api/user/heartList", methods = ["GET"])
+def user_heart_list():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        else:
+            houses = services.user.heart_list(int(uid))
+            houses = [{
+                "id": str(house.id),
+                "cover": json.loads(house.images)[0]["filePath"],
+                "title": house.title,
+                "area": str(house.area_building),
+                "region": house.address_region.split(",")[3],
+                "price": f"{house.rent_price}万元/月",
+                "transaction_type": house.transaction_type,
+            } for house in houses]
+            response = {"status": "success", "houses": houses}
+        return jsonify(response), 200
+
 # 未完成
 @app.route("/api/user/all", methods = ["GET", "POST"])
 def user_all():
@@ -99,11 +119,12 @@ def user_all():
 @app.route("/api/house/detail/<house_id>", methods = ["GET"])
 def house_detail(house_id):
     with app.app_context():
+        uid = request.headers.get("Uid", None)
         house = services.house.get(int(house_id))
         if house is None:
             response = {"status": "error", "errorMsg": "Id无效"}
         else:
-            detail = services.house.detail(house)
+            detail = services.house.detail(house, int(uid))
             response = {"status": "success", "detail": detail}
         
         return jsonify(response), 200
@@ -340,8 +361,39 @@ def house_search():
         response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
+@app.route("/api/house/heart", methods = ["POST"])
+def house_heart():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        elif not request.data:
+            response = {"status": "error", "errorMsg":"缺少参数:houseId"}
+        else:
+            house_id = request.get_json().get("houseId", None)
+            if house_id is None:
+                response = {"status": "error", "errorMsg": "缺少参数:houseId"}
+            else:
+                result = services.user.heart(int(uid), int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": "重复收藏"}
+        return jsonify(response), 200
 
-
+@app.route("/api/house/cancelHeart", methods = ["POST"])
+def house_cancel_heart():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        elif not request.data:
+            response = {"status": "error", "errorMsg":"缺少参数:houseId"}
+        else:
+            house_id = request.get_json().get("houseId", None)
+            if house_id is None:
+                response = {"status": "error", "errorMsg": "缺少参数:houseId"}
+            else:
+                result = services.user.cancel_heart(int(uid), int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": "无收藏记录"}
+        return jsonify(response), 200
 
 
 

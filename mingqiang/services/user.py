@@ -1,4 +1,4 @@
-from mingqiang.model import User, Group, House, UserGroupShip
+from mingqiang.model import User, Group, House, UserGroupShip, UserCollectionShip
 from mingqiang import db, app, house_id_generator, user_id_generator
 from mingqiang import services
 from typing import Union
@@ -60,8 +60,7 @@ def group_remove(user: Union[int, User], group: Union[int, Group]):
     if type(user) == int:
         user: User = get(user)
     if type(group) == int:
-        group: Group = group.id
-    group = services.group.get(group.id)
+        group: Group = group
     UserGroupShip.query.filter_by(user_id = user.id, group_id = group.id).delete()
     db.session.commit()
     return
@@ -120,4 +119,35 @@ def update_role(user: Union[int, User], group: Union[int, Group], role: int):
         ugship.role = role
         db.session.commit()
     return
+
+def heart(user: Union[int, User], house: Union[int, House]) -> bool:
+    if type(user) == int:
+        user: User = get(user)
+    if type(house) == int:
+        house: House = services.house.get(house)
+    collentions = [collention.id for collention in user.collections]
+    if house.id in collentions:
+        return False
+    user.collections.append(house)
+    db.session.commit()
+    return True
+
+def cancel_heart(user: Union[int, User], house: Union[int, House]) -> bool:
+    if type(user) == int:
+        user: User = get(user)
+    if type(house) == int:
+        house: House = services.house.get(house)
+    collentions = [collention.id for collention in user.collections]
+    if house.id not in collentions:
+        return False
+    UserCollectionShip.query.filter_by(user_id = user.id, house_id = house.id).delete()
+    db.session.commit()
+    return True
+
+def heart_list(user: Union[int, User]):
+    if type(user) == int:
+        user: User = get(user)
+    houses = user.collections
+    houses = [house for house in houses if house.removed is False]
+    return houses
 
