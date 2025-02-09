@@ -58,7 +58,9 @@ def get_onsale(user: Union[int, User]) -> list:
     if type(user) == int:
         user = services.user.get(user)
 
-    if user.supervisor:
+    if user is None:
+        houses = []
+    elif user.supervisor:
         houses = House.query.filter(House.transaction_type == 1, House.removed == False).all()
     elif services.user.is_administrator(user):
         groups = [group['id'] for group in services.user.group_manageable(user)]
@@ -73,7 +75,9 @@ def get_onrent(user: Union[int, User]) -> list:
     if type(user) == int:
         user = services.user.get(user)
 
-    if user.supervisor:
+    if user is None:
+        houses = []
+    elif user.supervisor:
         houses = House.query.filter(House.transaction_type == 2, House.removed == False).all()
     elif services.user.is_administrator(user):
         groups = [group['id'] for group in services.user.group_manageable(user)]
@@ -88,7 +92,9 @@ def get_removed(user: Union[int, User]) -> list:
     if type(user) == int:
         user = services.user.get(user)
 
-    if user.supervisor:
+    if user is None:
+        houses = []
+    elif user.supervisor:
         houses = House.query.filter(House.removed == True).all()
     elif services.user.is_administrator(user):
         groups = [group['id'] for group in services.user.group_manageable(user)]
@@ -232,15 +238,19 @@ def detail(house: Union[int, House], user: Union[int, User]):
         house: House = get(house)
     if type(user) == int:
         user: User = services.user.get(user)
-    raw = json.loads(house.raw)
-    raw["address"].pop("required")
-    raw["area"].pop("required")
-    raw["floor"].pop("required")
-    raw.pop("homeOwner")
+
     if user is None:
-        raw["hearted"] = 0
+        raw = []
     else:
-        raw["hearted"] = 1 if house.id in [collention.id for collention in user.collections] else 2
+        raw = json.loads(house.raw)
+        raw["address"].pop("required")
+        raw["area"].pop("required")
+        raw["floor"].pop("required")
+        raw.pop("homeOwner")
+        if user is None:
+            raw["hearted"] = 0
+        else:
+            raw["hearted"] = 1 if house.id in [collention.id for collention in user.collections] else 2
     return raw
 
 # def heart(user: Union[int, User], house: Union[int, House]):
