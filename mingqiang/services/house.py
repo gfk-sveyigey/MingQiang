@@ -74,12 +74,12 @@ def get_onrent(user: Union[int, User]) -> list:
         user = services.user.get(user)
 
     if user.supervisor:
-        houses = House.query.filter(House.transaction_type == 2, House.removed is False).all()
+        houses = House.query.filter(House.transaction_type == 2, House.removed == False).all()
     elif services.user.is_administrator(user):
         groups = [group['id'] for group in services.user.group_manageable(user)]
-        houses = House.query.filter(House.transaction_type == 2, House.removed is False, House.group_id in groups)
+        houses = House.query.filter(House.transaction_type == 2, House.removed == False, House.group_id in groups)
     elif len(user.groups) != 0:
-        houses = House.query.filter(House.transaction_type == 2, House.removed is False, House.owner_id == user.id)
+        houses = House.query.filter(House.transaction_type == 2, House.removed == False, House.owner_id == user.id)
     else:
         houses = []
     return houses
