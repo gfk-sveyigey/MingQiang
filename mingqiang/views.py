@@ -1,9 +1,8 @@
 from flask import render_template, request, jsonify
-from mingqiang import app
+from mingqiang import app, map
 import json
 
 from mingqiang import services
-
 
 # @app.route("/", methods = ["GET"])
 # def index():
@@ -577,3 +576,26 @@ def group_all():
             response = {"status": "success", "groups": groups}
         return jsonify(response), 200
 
+@app.route("/api/map/district/list", methods = ["GET"])
+def map_district_list():
+    response = {"status": "success", "district": map.district_list}
+    return jsonify(response), 200
+
+@app.route("/api/map/geocoder", methods = ["POST"])
+def map_geocoder():
+    if not request.data:
+        response = {"status": "error", "errorMsg": "缺少参数"}
+    else:
+        # latitude: 纬度
+        # longitude: 经度
+        latitude = request.get_json().get("latitude", None)
+        longitude = request.get_json().get("longitude", None)
+        if latitude is None or longitude is None:
+            response = {"status": "error", "errorMsg": "缺少参数"}
+        else:
+            result = map.map_geocoder(latitude, longitude)
+            if result["status"] == 0:
+                response = {"status": "success", "result": result["result"]}
+            else:
+                response = {"status": "error", "errorMsg": result["message"]}
+    return jsonify(response), 200

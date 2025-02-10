@@ -3,9 +3,9 @@ from flask_sqlalchemy import SQLAlchemy
 import pymysql
 import config
 
-
 __all__ = [
     "app",
+    "scheduler",
     "db",
     "house_id_generator",
     "user_id_generator",
@@ -41,8 +41,24 @@ with app.app_context():
 # 加载雪花id生成器
 from mingqiang.snowflake import house_id_generator, user_id_generator
 
-# 启动服务
-import run
+
+
+# 实例化定时任务
+from flask_apscheduler import APScheduler
+# 禁用调度器 API
+app.config['SCHEDULER_API_ENABLED'] = False
+scheduler = APScheduler()
+scheduler.init_app(app)
+# 启动调度器
+scheduler.start()
+
+# 导入地图服务
+from mingqiang.services import map
+from mingqiang import jobs
+
+
+# # 启动服务
+# import run
 
 # 加载控制器
 from mingqiang import views
