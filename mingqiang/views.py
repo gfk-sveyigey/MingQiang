@@ -1,6 +1,7 @@
 from flask import render_template, request, jsonify
 from mingqiang import app, map
 import json
+import random
 
 from mingqiang import services
 
@@ -314,6 +315,7 @@ def house_recommend():
             "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
             "transaction_type": house.transaction_type,
         } for house in houses]
+        random.shuffle(houses)
         response = {"status": "success", "houses": houses}
         return jsonify(response), 200
     
