@@ -252,7 +252,7 @@ def detail(house: Union[int, House], user: Union[int, User]):
         else:
             raw["hearted"] = 1 if house.id in [collention.id for collention in user.collections] else 2
 
-        if house.group_id in [group.id for group in user.groups]:
+        if user.supervisor or house.group_id in [group.id for group in user.groups]:
             owner = services.user.get(house.owner_id)
             group = services.group.get(house.group_id)
             raw["owner"] = f"{group.name} - {owner.nickname}"
