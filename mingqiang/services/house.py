@@ -251,6 +251,12 @@ def detail(house: Union[int, House], user: Union[int, User]):
             raw["hearted"] = 0
         else:
             raw["hearted"] = 1 if house.id in [collention.id for collention in user.collections] else 2
+
+        if house.group_id in [group.id for group in user.groups]:
+            owner = services.user.get(house.owner_id)
+            raw["owner"] = owner.nickname
+        else:
+            raw["owner"] = ""
     return raw
 
 # def heart(user: Union[int, User], house: Union[int, House]):

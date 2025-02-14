@@ -578,7 +578,26 @@ def group_all():
 
 @app.route("/api/map/district/list", methods = ["GET"])
 def map_district_list():
-    response = {"status": "success", "district": map.district_list}
+    if map.district_list == []:
+        response = {"status": "error", "errorMsg": "无可用数据"}
+    else:
+        response = {"status": "success", "district": map.district_list}
+    return jsonify(response), 200
+
+@app.route("/api/map/district/children", methods = ["POST"])
+def map_district_children():
+    if not request.data:
+        response = {"status": "error", "errorMsg": "缺少参数"}
+    else:
+        district_id = request.get_json().get("districtId", None)
+        if district_id is None:
+            response = {"status": "error", "errorMsg": "缺少参数"}
+        else:
+            result = map.map_district_get_children(id = district_id)
+            if result == {}:
+                response = {"status": "error", "errorMsg": "获取失败"}
+            else:
+                response = {"status": "success", "result": result}
     return jsonify(response), 200
 
 @app.route("/api/map/geocoder", methods = ["POST"])

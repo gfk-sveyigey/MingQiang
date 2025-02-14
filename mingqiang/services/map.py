@@ -31,8 +31,24 @@ def map_district_list() -> None:
         path = "/district/v1/list",
         **data
     )
-    district_list = json.loads(res)
+    res = json.loads(res)
+    if res["status"] == 0:
+        district_list = res["result"]
+    else:
+        district_list = []
     return
+
+def map_district_get_children(id: int | str) -> list:
+    data = {"id": id}
+    res = map_ws(
+        path = "/district/v1/getchildren",
+        **data
+    )
+    res = json.loads(res)
+    if res["status"] == 0:
+        return res["result"][0]
+    else:
+        return []
 
 def map_geocoder(latitude: float, longitude: float):
     # 逆地址解析
