@@ -100,11 +100,33 @@ def user_heart_list():
                 "title": house.title,
                 "area": str(house.area_building),
                 "region": house.address_region.split(",")[3],
-                "price": f"{house.rent_price}万元/月",
+                "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
                 "transaction_type": house.transaction_type,
             } for house in houses]
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
+
+@app.route("/api/user/recommendList", methods = ["GET"])
+def user_recommend_list():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        else:
+            # houses = services.user.recommend_list(int(uid))
+            houses = services.user.heart_list(int(uid))
+            houses = [{
+                "id": str(house.id),
+                "cover": json.loads(house.images)[0]["filePath"],
+                "title": house.title,
+                "area": str(house.area_building),
+                "region": house.address_region.split(",")[3],
+                "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+                "transaction_type": house.transaction_type,
+            } for house in houses]
+            response = {"status": "success", "houses": houses}
+        return jsonify(response), 200
+
 
 # 未完成
 @app.route("/api/user/all", methods = ["GET", "POST"])

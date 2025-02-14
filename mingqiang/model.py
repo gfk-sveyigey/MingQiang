@@ -15,7 +15,8 @@ class User(db.Model):
     avatar = Column(String(128), nullable = False, default = "")
     supervisor = Column(Boolean, nullable = False, default = False)
     groups = db.relationship("Group", secondary = "usergroupships", back_populates = "members")
-    houses = db.relationship("House", backref = db.backref("owner"))
+    houses = db.relationship("House", backref = db.backref("owner"), foreign_keys = "House.owner_id")
+    recommends = db.relationship("House", backref = db.backref("reference"), foreign_keys = "House.reference_id")
     collections = db.relationship("House", secondary = "usercollectionships", back_populates = "collectors")
 
     created_at = Column(DateTime, nullable = False, default = datetime.now(timezone.utc))
@@ -73,6 +74,7 @@ class House(db.Model):
 
     owner_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable = False)
     group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable = False)
+    reference_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable = True)
     collectors = db.relationship("User", secondary = "usercollectionships", back_populates = "collections")
 
     raw = Column(Text, nullable = False, default = "")
@@ -95,3 +97,8 @@ class UserCollectionShip(db.Model):
     # 设定字段
     user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key = True)
     house_id = Column(BigInteger, ForeignKey("houses.id", ondelete="CASCADE"), primary_key = True)
+
+
+
+
+

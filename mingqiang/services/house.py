@@ -239,7 +239,7 @@ def detail(house: Union[int, House], user: Union[int, User]):
     if type(user) == int:
         user: User = services.user.get(user)
 
-    if user is None:
+    if user is None or house.removed:
         raw = []
     else:
         raw = json.loads(house.raw)

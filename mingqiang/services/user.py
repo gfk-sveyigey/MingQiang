@@ -148,6 +148,13 @@ def heart_list(user: Union[int, User]):
     if type(user) == int:
         user: User = get(user)
     houses = user.collections
-    houses = [house for house in houses if house.removed is False]
+    houses = [house for house in houses if not house.removed]
     return houses
 
+def recommend_list(user: Union[int, User]):
+    if type(user) == int:
+        user: User = get(user)
+    recommends = user.recommends
+    app.logger.warning(recommends)
+ 
+    return []
