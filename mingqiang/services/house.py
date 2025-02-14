@@ -254,7 +254,8 @@ def detail(house: Union[int, House], user: Union[int, User]):
 
         if house.group_id in [group.id for group in user.groups]:
             owner = services.user.get(house.owner_id)
-            raw["owner"] = owner.nickname
+            group = services.group.get(house.group_id)
+            raw["owner"] = f"{group.name} - {owner.nickname}"
         else:
             raw["owner"] = ""
     return raw
