@@ -545,6 +545,11 @@ def group_remove():
                 elif not services.user.group_in(user, group):
                     response = {"status": "error", "errorMsg": "用户未在分组中"}
                 else:
+                    creator = services.group.get_creator(int(group_id))
+                    if creator is not None:
+                        houses = services.user.get_houses(user, group)
+                        for house in houses:
+                            services.house.change_owner(house, creator)
                     services.user.group_remove(user, group)
                     response = {"status": "success"}
         return jsonify(response), 200

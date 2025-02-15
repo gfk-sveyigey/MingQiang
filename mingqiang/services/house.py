@@ -162,6 +162,20 @@ def update(data: dict, uid: int) -> House:
     db.session.commit()
     return house
 
+def change_owner(house: Union[int, House], owner: Union[int, User]):
+    if type(house) == int:
+        house: House = get(house)
+    if type(owner) == int:
+        owner: User = services.user.get(owner)
+
+    if house.owner_id != owner.id:
+        house.owner = owner
+        raw = json.loads(house.raw)
+        raw["ownerId"] = str(owner.id)
+        house.raw = json.dumps(raw)
+        db.session.commit()
+    return
+
 def recommend(house_type: int = 0, numbers: int = 10) -> list:
     if house_type == 0:
         houses = House.query.filter(House.removed == False).order_by(House.id.desc()).limit(numbers).all()

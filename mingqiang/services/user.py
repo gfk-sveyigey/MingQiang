@@ -45,13 +45,10 @@ def group_in(user: Union[int, User], group: Union[int, Group]) -> bool:
     return group in group_ids
 
 def group_join(user: Union[int, User], group: Union[int, Group]):
-    """
-    函数内不进行校验，函数外务必校验参数是否合法。
-    """
     if type(user) == int:
         user: User = get(user)
     if type(group) == int:
-        group: Group = group.id
+        group: Group = services.group.get(group)
     group.members.append(user)
     db.session.commit()
     return
@@ -60,7 +57,7 @@ def group_remove(user: Union[int, User], group: Union[int, Group]):
     if type(user) == int:
         user: User = get(user)
     if type(group) == int:
-        group: Group = group
+        group: Group = services.group.get(group)
     UserGroupShip.query.filter_by(user_id = user.id, group_id = group.id).delete()
     db.session.commit()
     return
@@ -74,6 +71,16 @@ def group_manageable(user: Union[int, User]) -> list:
     else:
         result = [{"id": group.id, "name": group.name} for group in user.groups if group.role > 0]
     return result
+
+def get_houses(user: Union[int, User], group: Union[int, Group]) -> list:
+    if type(user) == int:
+        user: User = get(user)
+    if type(group) == int:
+        group: Group = services.group.get(group)
+
+    houses: list[House] = user.houses
+    houses = [house for house in houses if house.group_id == group.id]
+    return houses
 
 def get_role(user: Union[int, User], group: Union[int, Group]) -> int:
     if type(user) == User:
