@@ -113,8 +113,8 @@ def user_recommend_list():
         if uid is None:
             response = {"status": "error", "errorMsg": "Uid错误"}
         else:
-            # houses = services.user.recommend_list(int(uid))
-            houses = services.user.heart_list(int(uid))
+            houses = services.user.recommend_list(int(uid))
+            # houses = services.user.heart_list(int(uid))
             houses = [{
                 "id": str(house.id),
                 "cover": json.loads(house.images)[0]["filePath"],
@@ -198,6 +198,7 @@ def house_onsale():
                 "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
                 "price": f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元",
                 "transaction_type": house.transaction_type,
+                "recommended": 1 if house.reference_id == int(uid) else 2,
             } for house in houses]
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
@@ -220,6 +221,7 @@ def house_onrent():
                 "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
                 "price": f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月",
                 "transaction_type": house.transaction_type,
+                "recommended": 1 if house.reference_id == int(uid) else 2,
             } for house in houses]
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
@@ -242,6 +244,7 @@ def house_removed():
                 "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
                 "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
                 "transaction_type": house.transaction_type,
+                "recommended": 1 if house.reference_id == int(uid) else 2
             } for house in houses]
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
@@ -320,8 +323,8 @@ def house_update():
 
         return jsonify(response), 200
 
-@app.route("/api/house/recommend", methods = ["POST"])
-def house_recommend():
+@app.route("/api/house/recommendList", methods = ["POST"])
+def house_recommend_list():
     with app.app_context():
         if not request.data:
             house_type = 0
@@ -341,8 +344,8 @@ def house_recommend():
         response = {"status": "success", "houses": houses}
         return jsonify(response), 200
     
-@app.route("/api/house/latest", methods = ["POST"])
-def house_latest():
+@app.route("/api/house/latestList", methods = ["POST"])
+def house_latest_list():
     with app.app_context():
         if not request.data:
             house_type = 0
@@ -397,8 +400,8 @@ def house_heart():
             if house_id is None:
                 response = {"status": "error", "errorMsg": "缺少参数:houseId"}
             else:
-                result = services.user.heart(int(uid), int(house_id))
-                response = {"status": "success"} if result else {"status": "error", "errorMsg": "重复收藏"}
+                result, msg = services.user.heart(int(uid), int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
         return jsonify(response), 200
 
 @app.route("/api/house/cancelHeart", methods = ["POST"])
@@ -414,10 +417,43 @@ def house_cancel_heart():
             if house_id is None:
                 response = {"status": "error", "errorMsg": "缺少参数:houseId"}
             else:
-                result = services.user.cancel_heart(int(uid), int(house_id))
-                response = {"status": "success"} if result else {"status": "error", "errorMsg": "无收藏记录"}
+                result, msg = services.user.cancel_heart(int(uid), int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
         return jsonify(response), 200
 
+@app.route("/api/house/recommend", methods = ["POST"])
+def house_recommend():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        elif not request.data:
+            response = {"status": "error", "errorMsg":"缺少参数:houseId"}
+        else:
+            house_id = request.get_json().get("houseId", None)
+            if house_id is None:
+                response = {"status": "error", "errorMsg": "缺少参数:houseId"}
+            else:
+                result, msg = services.user.recommend(int(uid), int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
+        return jsonify(response), 200
+
+@app.route("/api/house/cancelRecommend", methods = ["POST"])
+def house_cancel_recommend():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        elif not request.data:
+            response = {"status": "error", "errorMsg":"缺少参数:houseId"}
+        else:
+            house_id = request.get_json().get("houseId", None)
+            if house_id is None:
+                response = {"status": "error", "errorMsg": "缺少参数:houseId"}
+            else:
+                result, msg = services.user.cancel_recommend(int(uid), int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
+        return jsonify(response), 200
 
 
 
@@ -604,6 +640,8 @@ def group_all():
             groups = [services.group.response(group) for group in services.group.get_all()]
             response = {"status": "success", "groups": groups}
         return jsonify(response), 200
+
+
 
 @app.route("/api/map/district/list", methods = ["GET"])
 def map_district_list():

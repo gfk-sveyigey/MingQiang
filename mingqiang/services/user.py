@@ -1,7 +1,7 @@
 from mingqiang.model import User, Group, House, UserGroupShip, UserCollectionShip
 from mingqiang import db, app, house_id_generator, user_id_generator
 from mingqiang import services
-from typing import Union
+from typing import Union, Tuple
 
 
 def find_with_openid(openid) -> Union[User, None]:
@@ -127,41 +127,71 @@ def update_role(user: Union[int, User], group: Union[int, Group], role: int):
         db.session.commit()
     return
 
-def heart(user: Union[int, User], house: Union[int, House]) -> bool:
+def heart(user: Union[int, User], house: Union[int, House]) -> Tuple[bool, str]:
     if type(user) == int:
         user: User = get(user)
     if type(house) == int:
         house: House = services.house.get(house)
     collentions = [collention.id for collention in user.collections]
     if house.id in collentions:
-        return False
+        return False, "重复收藏"
     user.collections.append(house)
     db.session.commit()
-    return True
+    return True, "收藏成功"
 
-def cancel_heart(user: Union[int, User], house: Union[int, House]) -> bool:
+def cancel_heart(user: Union[int, User], house: Union[int, House]) -> Tuple[bool, str]:
     if type(user) == int:
         user: User = get(user)
     if type(house) == int:
         house: House = services.house.get(house)
     collentions = [collention.id for collention in user.collections]
     if house.id not in collentions:
-        return False
+        return False, "无收藏记录"
     UserCollectionShip.query.filter_by(user_id = user.id, house_id = house.id).delete()
     db.session.commit()
-    return True
+    return True, "取消成功"
 
-def heart_list(user: Union[int, User]):
+def heart_list(user: Union[int, User]) -> list:
     if type(user) == int:
         user: User = get(user)
     houses = user.collections
     houses = [house for house in houses if not house.removed]
     return houses
 
-def recommend_list(user: Union[int, User]):
+def recommend(user: Union[int, User], house: Union[int, House]) -> Tuple[bool, str]:
     if type(user) == int:
         user: User = get(user)
-    recommends = user.recommends
-    app.logger.warning(recommends)
- 
-    return []
+    if type(house) == int:
+        house: House = services.house.get(house)
+
+    recommend_limit = 10 if is_administrator(user) else 5
+    if house.reference_id is None:
+        if user.supervisor or len(user.recommends) <= recommend_limit:
+            house.reference_id = user.id
+            db.session.commit()
+            return True, "推荐成功"
+        return False, "已达推荐上限"
+    elif house.reference_id == user.id:
+        return False, "已推荐此房源"
+    else:
+        return False, "已被推荐房源"
+    
+def cancel_recommend(user: Union[int, User], house: Union[int, House]) -> Tuple[bool, str]:
+    if type(user) == int:
+        user: User = get(user)
+    if type(house) == int:
+        house: House = services.house.get(house)
+
+    if house.reference_id != user.id:
+        return False, "无推荐记录"
+    else:
+        house.reference_id = None
+        db.session.commit()
+        return True, "取消成功"
+
+def recommend_list(user: Union[int, User]) -> list:
+    if type(user) == int:
+        user: User = get(user)
+    houses = user.recommends
+    houses = [house for house in houses if not house.removed]
+    return houses

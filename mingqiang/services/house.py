@@ -263,8 +263,13 @@ def detail(house: Union[int, House], user: Union[int, User]):
         raw.pop("homeOwner")
         if user is None:
             raw["hearted"] = 0
+            raw["recommended"] = 0
         else:
             raw["hearted"] = 1 if house.id in [collention.id for collention in user.collections] else 2
+            if user.supervisor or services.user.is_administrator(user) or house.owner_id == user.id:
+                raw["recommended"] = 1 if house.reference_id == user.id else 2
+            else:
+                raw["recommended"] = 0
 
         if user.supervisor or house.group_id in [group.id for group in user.groups]:
             owner = services.user.get(house.owner_id)
