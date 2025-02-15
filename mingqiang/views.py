@@ -99,7 +99,7 @@ def user_heart_list():
                 "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region.split(",")[3],
+                "region": house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2],
                 "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
                 "transaction_type": house.transaction_type,
             } for house in houses]
@@ -120,7 +120,7 @@ def user_recommend_list():
                 "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region.split(",")[3],
+                "region": house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2],
                 "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
                 "transaction_type": house.transaction_type,
             } for house in houses]
@@ -195,7 +195,7 @@ def house_onsale():
                 "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region.split(",")[3],
+                "region": house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2],
                 "price": f"{house.sale_price}万元",
                 "transaction_type": house.transaction_type,
             } for house in houses]
@@ -217,7 +217,7 @@ def house_onrent():
                 "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region.split(",")[3],
+                "region": house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2],
                 "price": f"{house.rent_price}万元/月",
                 "transaction_type": house.transaction_type,
             } for house in houses]
@@ -239,7 +239,7 @@ def house_removed():
                 "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region.split(",")[3],
+                "region": house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2],
                 "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
                 "transaction_type": house.transaction_type,
             } for house in houses]
@@ -333,7 +333,7 @@ def house_recommend():
             "cover": json.loads(house.images)[0]["filePath"],
             "title": house.title,
             "area": str(house.area_building),
-            "region": house.office_name if house.house_type == 2 else house.address_region.split(",")[3],
+            "region": house.office_name if house.house_type == 2 else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
             "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
             "transaction_type": house.transaction_type,
         } for house in houses]
@@ -354,7 +354,7 @@ def house_latest():
             "cover": json.loads(house.images)[0]["filePath"],
             "title": house.title,
             "area": str(house.area_building),
-            "region": house.office_name if (house.house_type == 2) else house.address_region.split(",")[3],
+            "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
             "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
             "transaction_type": house.transaction_type,
         } for house in houses]
@@ -375,7 +375,7 @@ def house_search():
                 "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.office_name if (house.house_type == 2) else house.address_region.split(",")[3],
+                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
                 "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
                 "transaction_type": house.transaction_type,
             } for house in houses]
