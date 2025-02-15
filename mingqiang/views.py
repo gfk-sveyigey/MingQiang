@@ -114,7 +114,6 @@ def user_recommend_list():
             response = {"status": "error", "errorMsg": "Uid错误"}
         else:
             houses = services.user.recommend_list(int(uid))
-            # houses = services.user.heart_list(int(uid))
             houses = [{
                 "id": str(house.id),
                 "cover": json.loads(house.images)[0]["filePath"],

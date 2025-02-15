@@ -178,9 +178,9 @@ def change_owner(house: Union[int, House], owner: Union[int, User]):
 
 def recommend(house_type: int = 0, numbers: int = 10) -> list:
     if house_type == 0:
-        houses = House.query.filter(House.removed == False).order_by(House.id.desc()).limit(numbers).all()
+        houses = House.query.filter(House.reference_id != None, House.removed == False).order_by(House.id.desc()).limit(numbers).all()
     else:
-        houses = House.query.filter(House.house_type == house_type, House.removed == False).order_by(House.id.desc()).limit(numbers).all()
+        houses = House.query.filter(House.reference_id != None, House.house_type == house_type, House.removed == False).order_by(House.id.desc()).limit(numbers).all()
     return houses
 
 def latest(house_type: int = 0, numbers: int = 20) -> list:
