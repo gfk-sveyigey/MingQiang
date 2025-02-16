@@ -174,7 +174,8 @@ def recommend(user: Union[int, User], house: Union[int, House]) -> Tuple[bool, s
     elif house.reference_id == user.id:
         return False, "已推荐此房源"
     else:
-        return False, "已被推荐房源"
+        reference = get(house.reference_id)
+        return False, f"{reference.nickname}已推荐"
     
 def cancel_recommend(user: Union[int, User], house: Union[int, House]) -> Tuple[bool, str]:
     if type(user) == int:
