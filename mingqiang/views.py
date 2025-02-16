@@ -371,7 +371,7 @@ def house_search():
         else:
             option = request.get_json().get("option", {})
         try:
-            houses = services.house.search(**option)
+            houses, total_num = services.house.search(**option)
             houses = [{
                 "id": str(house.id),
                 "cover": json.loads(house.images)[0]["filePath"],
@@ -383,7 +383,7 @@ def house_search():
             } for house in houses]
         except Exception as e:
             houses = []
-        response = {"status": "success", "houses": houses}
+        response = {"status": "success", "houses": houses, "totalNum": total_num}
         return jsonify(response), 200
 
 @app.route("/api/house/heart", methods = ["POST"])

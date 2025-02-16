@@ -245,7 +245,12 @@ def search(
                     and_(House.transaction_type == 2, House.rent_price <= price_max),
                 )
             )
-    return houses.offset(offset).limit(number).all()
+    if offset == 0:
+        total = houses
+        total_num = len(total.all())
+    else:
+        total_num = -1
+    return houses.offset(offset).limit(number).all(), total_num
 
 def detail(house: Union[int, House], user: Union[int, User]):
     if type(house) == int:
