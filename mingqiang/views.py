@@ -5,15 +5,6 @@ import random
 
 from mingqiang import services, jobs
 
-# @app.route("/", methods = ["GET"])
-# def index():
-#     return jsonify({}), 200
-
-@app.route("/api/test", methods = ["GET"])
-def test():
-    jobs.add_cancel_recommend_job(545785082361597952)
-
-    return jsonify(), 200
 
 @app.route("/api/login", methods = ["GET"])
 def login():
