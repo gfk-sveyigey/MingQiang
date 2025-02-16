@@ -284,22 +284,4 @@ def detail(house: Union[int, House], user: Union[int, User]):
             raw["owner"] = ""
     return raw
 
-# def heart(user: Union[int, User], house: Union[int, House]):
-#     if type(user) == int:
-#         user: User = services.user.get(user)
-#     if type(house) == int:
-#         house: House = get(house)
-#     user.collections.append(house)
-#     db.session.commit()
-#     return
-
-# def cancel_heart(user: Union[int, User], house: Union[int, House]):
-#     if type(user) == int:
-#         user: User = services.user.get(user)
-#     if type(house) == int:
-#         house: House = get(house)
-#     UserCollectionShip.query.filter_by(user_id = user.id, house_id = user.id).delete()
-#     db.session.commit()
-#     return
-
 

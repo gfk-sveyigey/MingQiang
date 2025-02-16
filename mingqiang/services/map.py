@@ -2,7 +2,6 @@ import hashlib
 import requests
 import config
 import json
-from mingqiang import jobs, scheduler
 
 
 district_list = {}
@@ -62,7 +61,7 @@ def map_geocoder(latitude: float, longitude: float):
     region = json.loads(res)
     return region
 
-scheduler.add_job(func=jobs.job_district_list, trigger="interval", hours=1, id="job_district_list")
-jobs.job_district_list()
+
+
 
 

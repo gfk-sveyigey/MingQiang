@@ -19,8 +19,8 @@ class User(db.Model):
     recommends = db.relationship("House", backref = db.backref("reference"), foreign_keys = "House.reference_id")
     collections = db.relationship("House", secondary = "usercollectionships", back_populates = "collectors")
 
-    created_at = Column(DateTime, nullable = False, default = datetime.now(timezone.utc))
-    updated_at = Column(DateTime, nullable = False, default = datetime.now(timezone.utc), onupdate = datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable = False, default = datetime.now())
+    updated_at = Column(DateTime, nullable = False, default = datetime.now(), onupdate = datetime.now())
 
 class Group(db.Model):
     # 设置表名
@@ -78,8 +78,8 @@ class House(db.Model):
     collectors = db.relationship("User", secondary = "usercollectionships", back_populates = "collections")
 
     raw = Column(Text, nullable = False, default = "")
-    created_at = Column('createdAt', DateTime, nullable=False, default=datetime.now(timezone.utc))
-    updated_at = Column('updatedAt', DateTime, nullable=False, default=datetime.now(timezone.utc), onupdate = datetime.now(timezone.utc))
+    created_at = Column('createdAt', DateTime, nullable=False, default=datetime.now())
+    updated_at = Column('updatedAt', DateTime, nullable=False, default=datetime.now(), onupdate = datetime.now())
 
 
 # 关系表
@@ -98,6 +98,14 @@ class UserCollectionShip(db.Model):
     user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key = True)
     house_id = Column(BigInteger, ForeignKey("houses.id", ondelete="CASCADE"), primary_key = True)
 
+
+# 任务表
+class RecommendJob(db.Model):
+    # 设置表名
+    __tablename__ = "recommendjob"
+    # 设定字段
+    job_id = Column(BigInteger, primary_key = True, unique = True, nullable = True)
+    date = Column(DateTime, nullable = False)
 
 
 

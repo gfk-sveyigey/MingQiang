@@ -3,11 +3,17 @@ from mingqiang import app, map
 import json
 import random
 
-from mingqiang import services
+from mingqiang import services, jobs
 
 # @app.route("/", methods = ["GET"])
 # def index():
 #     return jsonify({}), 200
+
+@app.route("/api/test", methods = ["GET"])
+def test():
+    jobs.add_cancel_recommend_job(545785082361597952)
+
+    return jsonify(), 200
 
 @app.route("/api/login", methods = ["GET"])
 def login():
@@ -199,6 +205,7 @@ def house_onsale():
                 "transaction_type": house.transaction_type,
                 "recommended": 1 if house.reference_id == int(uid) else 2,
             } for house in houses]
+            houses.reverse()
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
@@ -222,6 +229,7 @@ def house_onrent():
                 "transaction_type": house.transaction_type,
                 "recommended": 1 if house.reference_id == int(uid) else 2,
             } for house in houses]
+            houses.reverse()
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
@@ -245,6 +253,7 @@ def house_removed():
                 "transaction_type": house.transaction_type,
                 "recommended": 1 if house.reference_id == int(uid) else 2
             } for house in houses]
+            houses.reverse()
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
@@ -433,6 +442,7 @@ def house_recommend():
             if house_id is None:
                 response = {"status": "error", "errorMsg": "缺少参数:houseId"}
             else:
+                jobs.add_cancel_recommend_job(int(house_id))
                 result, msg = services.user.recommend(int(uid), int(house_id))
                 response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
         return jsonify(response), 200
@@ -450,6 +460,7 @@ def house_cancel_recommend():
             if house_id is None:
                 response = {"status": "error", "errorMsg": "缺少参数:houseId"}
             else:
+                jobs.remove_cancel_recommend_job(int(house_id))
                 result, msg = services.user.cancel_recommend(int(uid), int(house_id))
                 response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
         return jsonify(response), 200

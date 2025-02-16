@@ -5,7 +5,8 @@
 FROM alpine:3.20
 
 # 容器默认时区为UTC，如需使用上海时间请启用以下时区设置命令
-# RUN apk add tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone
+RUN apk add tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone
+
 
 # 使用 HTTPS 协议访问容器云调用证书安装
 RUN apk add ca-certificates
@@ -38,10 +39,6 @@ WORKDIR /app
 
 # 创建虚拟环境,创建至工作目录会被自动删除文件。
 RUN python3 -m venv /opt/venv
-
-# # 调试：列出虚拟环境的目录内容
-# RUN ls -la venv/bin/
-# RUN ls -la venv/
 
 # 激活虚拟环境并安装依赖
 RUN . /opt/venv/bin/activate \

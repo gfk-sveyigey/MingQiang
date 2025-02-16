@@ -42,6 +42,9 @@ with app.app_context():
 from mingqiang.snowflake import house_id_generator, user_id_generator
 
 
+# 导入地图服务
+from mingqiang.services import map
+
 
 # 实例化定时任务
 from flask_apscheduler import APScheduler
@@ -52,16 +55,15 @@ scheduler.init_app(app)
 # 启动调度器
 scheduler.start()
 
-# 导入地图服务
-from mingqiang.services import map
+
+# 导入定时任务
 from mingqiang import jobs
-
-
-# # 启动服务
-# import run
+# 定时器定时任务创建时不立即执行，于此处执行一次保证地区数据存在。
+map.map_district_list()
 
 # 加载控制器
 from mingqiang import views
+
 
 # 加载配置
 app.config.from_object('config')
