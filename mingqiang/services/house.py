@@ -258,7 +258,7 @@ def detail(house: Union[int, House], user: Union[int, User]):
     if type(user) == int:
         user: User = services.user.get(user)
 
-    if user is None or house.removed:
+    if house.removed:
         raw = []
     else:
         raw = json.loads(house.raw)
@@ -269,6 +269,7 @@ def detail(house: Union[int, House], user: Union[int, User]):
         if user is None:
             raw["hearted"] = 0
             raw["recommended"] = 0
+            raw["owner"] = ""
         else:
             raw["hearted"] = 1 if house.id in [collention.id for collention in user.collections] else 2
             if user.supervisor or services.user.is_administrator(user) or house.owner_id == user.id:
@@ -276,12 +277,12 @@ def detail(house: Union[int, House], user: Union[int, User]):
             else:
                 raw["recommended"] = 0
 
-        if user.supervisor or house.group_id in [group.id for group in user.groups]:
-            owner = services.user.get(house.owner_id)
-            group = services.group.get(house.group_id)
-            raw["owner"] = f"{group.name} - {owner.nickname}"
-        else:
-            raw["owner"] = ""
+            if user.supervisor or house.group_id in [group.id for group in user.groups]:
+                owner = services.user.get(house.owner_id)
+                group = services.group.get(house.group_id)
+                raw["owner"] = f"{group.name} - {owner.nickname}"
+            else:
+                raw["owner"] = ""
     return raw
 
 

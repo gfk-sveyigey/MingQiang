@@ -137,7 +137,7 @@ def user_all():
 @app.route("/api/house/detail/<house_id>", methods = ["GET"])
 def house_detail(house_id):
     with app.app_context():
-        uid = request.headers.get("Uid", None)
+        uid = request.headers.get("Uid", 0)
         house = services.house.get(int(house_id))
         if house is None:
             response = {"status": "error", "errorMsg": "Id无效"}
