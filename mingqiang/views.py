@@ -20,10 +20,13 @@ def login():
             else:
                 # user = services.user.update(user)
                 code = 200
+            response = {"status": "success", "openid": openid, "user": services.user.response(user)}
         except Exception as e:
             app.logger.warning(e)
+            response = {"status": "error", "errorMsg": e}
+            code = 400
 
-        return jsonify({"status": "success", "openid": openid, "user": services.user.response(user)}), code
+        return jsonify(response), code
 
 @app.route("/api/user/info", methods = ["GET", "POST"])
 def user_info():
@@ -144,6 +147,7 @@ def house_detail(house_id):
         else:
             detail = services.house.detail(house, int(uid))
             response = {"status": "success", "detail": detail}
+            # response = {"status": "error", "errorMsg": "Id无效"}
         
         return jsonify(response), 200
 
