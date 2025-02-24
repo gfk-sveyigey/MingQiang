@@ -1,25 +1,10 @@
-from datetime import datetime
 from flask import render_template, request, jsonify
-from mingqiang import db, app, house_id_generator, user_id_generator
-import requests
+from mingqiang import app, map
 import json
+import random
 
-from mingqiang.model import User, Group, House
-from mingqiang.response import make_succ_response, make_err_response
-from mingqiang import services
+from mingqiang import services, jobs
 
-
-# AppID
-APP_ID = "wx32626721437a9a62"
-
-# AppSecret
-APP_SECRET = "4b5ad7be1d38cbd6ac6d4cacbb50673d"
-
-
-@app.route('/')
-def index():
-    # return render_template('index.html')
-    return make_err_response(400, "Invalid URL.")
 
 @app.route("/api/login", methods = ["GET"])
 def login():
@@ -35,10 +20,13 @@ def login():
             else:
                 # user = services.user.update(user)
                 code = 200
+            response = {"status": "success", "openid": openid, "user": services.user.response(user)}
         except Exception as e:
             app.logger.warning(e)
+            response = {"status": "error", "errorMsg": e}
+            code = 400
 
-        return jsonify({"status": "success", "openid": openid, "user": services.user.response(user)}), code
+        return jsonify(response), code
 
 @app.route("/api/user/info", methods = ["GET", "POST"])
 def user_info():
@@ -98,20 +86,70 @@ def user_update_nickname():
                 response = {"status": "success"}
         return jsonify(response), 200
 
+@app.route("/api/user/heartList", methods = ["GET"])
+def user_heart_list():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        else:
+            houses = services.user.heart_list(int(uid))
+            houses = [{
+                "id": str(house.id),
+                "cover": json.loads(house.images)[0]["filePath"],
+                "title": house.title,
+                "area": str(house.area_building),
+                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+                "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
+                "transaction_type": house.transaction_type,
+            } for house in houses]
+            response = {"status": "success", "houses": houses}
+        return jsonify(response), 200
+
+@app.route("/api/user/recommendList", methods = ["GET"])
+def user_recommend_list():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        else:
+            houses = services.user.recommend_list(int(uid))
+            houses = [{
+                "id": str(house.id),
+                "cover": json.loads(house.images)[0]["filePath"],
+                "title": house.title,
+                "area": str(house.area_building),
+                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+                "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
+                "transaction_type": house.transaction_type,
+            } for house in houses]
+            response = {"status": "success", "houses": houses}
+        return jsonify(response), 200
+
+
 # 未完成
 @app.route("/api/user/all", methods = ["GET", "POST"])
 def user_all():
-    response = {"status": "error", "errorMsg": "未开放接口"}
-    return jsonify(response), 200
+    with app.app_context():
+        response = {"status": "error", "errorMsg": "未开放接口"}
+        return jsonify(response), 200
+
+
 
 # 未完成
-@app.route("/api/house/preview/<house_id>", methods = ["GET"])
-def house(house_id):
+@app.route("/api/house/detail/<house_id>", methods = ["GET"])
+def house_detail(house_id):
     with app.app_context():
-        app.logger.warning(house_id)
-
+        uid = request.headers.get("Uid", 0)
+        house = services.house.get(int(house_id))
+        if house is None:
+            response = {"status": "error", "errorMsg": "Id无效"}
+        else:
+            detail = services.house.detail(house, int(uid))
+            response = {"status": "success", "detail": detail}
+            # response = {"status": "error", "errorMsg": "Id无效"}
         
-        return jsonify(), 200
+        return jsonify(response), 200
 
 @app.route("/api/house/newid", methods = ["GET"])
 def house_newid():
@@ -122,7 +160,7 @@ def house_newid():
         elif not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无操作权限"}
         else:
-            house_id = house_id_generator.generate()
+            house_id = services.house.new_id()
             response = {"status": "success", "id": str(house_id)}
         return jsonify(response), 200
 
@@ -138,7 +176,7 @@ def house_new():
             response = {"status": "error", "errorMsg": "缺少参数"}
         else:
             data = request.get_json()
-            services.house.new(data, int(uid))
+            services.house.new(data)
             response = {"status": "success"}
         return jsonify(response), 200
     
@@ -148,19 +186,22 @@ def house_onsale():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无查询权限"}
         else:
-            houses = services.house.get_onsale()
+            houses = services.house.get_onsale(int(uid))
             houses = [{
                 "id": str(house.id),
-                "cover": json.loads(house.images)[0]["tempFilePath"],
+                "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region.split(",")[3],
-                "price": f"{house.sale_price}万元",
+                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+                "price": f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元",
+                "transaction_type": house.transaction_type,
+                "recommended": 1 if house.reference_id == int(uid) else 2,
             } for house in houses]
-            response = {"houses": houses}
+            houses.reverse()
+            response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
 @app.route("/api/house/onrent", methods = ["GET"])
@@ -169,19 +210,22 @@ def house_onrent():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无查询权限"}
         else:
-            houses = services.house.get_onrent()
+            houses = services.house.get_onrent(int(uid))
             houses = [{
                 "id": str(house.id),
-                "cover": json.loads(house.images)[0]["tempFilePath"],
+                "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region[3],
-                "price": f"{house.rent_price}万元/月",
+                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+                "price": f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月",
+                "transaction_type": house.transaction_type,
+                "recommended": 1 if house.reference_id == int(uid) else 2,
             } for house in houses]
-            response = {"houses": houses}
+            houses.reverse()
+            response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
 @app.route("/api/house/removed", methods = ["GET"])
@@ -190,19 +234,22 @@ def house_removed():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无查询权限"}
         else:
-            houses = services.house.get_removed()
+            houses = services.house.get_removed(int(uid))
             houses = [{
                 "id": str(house.id),
-                "cover": json.loads(house.images)[0]["tempFilePath"],
+                "cover": json.loads(house.images)[0]["filePath"],
                 "title": house.title,
                 "area": str(house.area_building),
-                "region": house.address_region[3],
-                "price": f"{house.sale_price}万元" if house.transaction_type == 1 else f"{house.rent_price}万元/月",
+                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+                "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
+                "transaction_type": house.transaction_type,
+                "recommended": 1 if house.reference_id == int(uid) else 2
             } for house in houses]
-            response = {"houses": houses}
+            houses.reverse()
+            response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
 @app.route("/api/house/remove", methods = ["POST"])
@@ -210,9 +257,9 @@ def house_remove():
     with app.app_context():
         uid = request.headers.get("Uid", None)
         if uid is None:
-            response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
-            response = {"status": "error", "errorMsg": "无查询权限"}
+            response = {"status": "error", "errorMsg": "无操作权限"}
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
+            response = {"status": "error", "errorMsg": "无操作权限"}
         elif not request.data:
             response = {"status": "error", "errorMsg":"缺少参数:houseId"}
         else:
@@ -249,7 +296,7 @@ def house_raw():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor:
+        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
             response = {"status": "error", "errorMsg": "无查询权限"}
         elif not request.data:
             response = {"status": "error", "errorMsg":"缺少参数:houseId"}
@@ -276,19 +323,144 @@ def house_update():
             data = request.get_json()
             services.house.update(data, int(uid))
             response = {"status": "success"}
+
+        return jsonify(response), 200
+
+@app.route("/api/house/recommendList", methods = ["POST"])
+def house_recommend_list():
+    with app.app_context():
+        if not request.data:
+            house_type = 0
+        else:
+            house_type = request.get_json().get("houseType", 0)
+        houses = services.house.recommend(house_type, 20)
+        houses = [{
+            "id": str(house.id),
+            "cover": json.loads(house.images)[0]["filePath"],
+            "title": house.title,
+            "area": str(house.area_building),
+            "region": house.office_name if house.house_type == 2 else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+            "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
+            "transaction_type": house.transaction_type,
+        } for house in houses]
+        random.shuffle(houses)
+        response = {"status": "success", "houses": houses}
+        return jsonify(response), 200
+    
+@app.route("/api/house/latestList", methods = ["POST"])
+def house_latest_list():
+    with app.app_context():
+        if not request.data:
+            house_type = 0
+        else:
+            house_type = request.get_json().get("houseType", 0)
+        houses = services.house.latest(house_type, 20)
+        houses = [{
+            "id": str(house.id),
+            "cover": json.loads(house.images)[0]["filePath"],
+            "title": house.title,
+            "area": str(house.area_building),
+            "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+            "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
+            "transaction_type": house.transaction_type,
+        } for house in houses]
+        response = {"status": "success", "houses": houses}
+        return jsonify(response), 200
+
+@app.route("/api/house/search", methods = ["POST"])
+def house_search():
+    with app.app_context():
+        if not request.data:
+            option = {}
+        else:
+            option = request.get_json().get("option", {})
+        try:
+            houses, total_num = services.house.search(**option)
+            houses = [{
+                "id": str(house.id),
+                "cover": json.loads(house.images)[0]["filePath"],
+                "title": house.title,
+                "area": str(house.area_building),
+                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+                "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
+                "transaction_type": house.transaction_type,
+            } for house in houses]
+        except Exception as e:
+            houses = []
+        response = {"status": "success", "houses": houses, "totalNum": total_num}
+        return jsonify(response), 200
+
+@app.route("/api/house/heart", methods = ["POST"])
+def house_heart():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        elif not request.data:
+            response = {"status": "error", "errorMsg":"缺少参数:houseId"}
+        else:
+            house_id = request.get_json().get("houseId", None)
+            if house_id is None:
+                response = {"status": "error", "errorMsg": "缺少参数:houseId"}
+            else:
+                result, msg = services.user.heart(int(uid), int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
+        return jsonify(response), 200
+
+@app.route("/api/house/cancelHeart", methods = ["POST"])
+def house_cancel_heart():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        elif not request.data:
+            response = {"status": "error", "errorMsg":"缺少参数:houseId"}
+        else:
+            house_id = request.get_json().get("houseId", None)
+            if house_id is None:
+                response = {"status": "error", "errorMsg": "缺少参数:houseId"}
+            else:
+                result, msg = services.user.cancel_heart(int(uid), int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
+        return jsonify(response), 200
+
+@app.route("/api/house/recommend", methods = ["POST"])
+def house_recommend():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        elif not request.data:
+            response = {"status": "error", "errorMsg":"缺少参数:houseId"}
+        else:
+            house_id = request.get_json().get("houseId", None)
+            if house_id is None:
+                response = {"status": "error", "errorMsg": "缺少参数:houseId"}
+            else:
+                result, msg = services.user.recommend(int(uid), int(house_id))
+                if result: jobs.add_cancel_recommend_job(int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
+        return jsonify(response), 200
+
+@app.route("/api/house/cancelRecommend", methods = ["POST"])
+def house_cancel_recommend():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "Uid错误"}
+        elif not request.data:
+            response = {"status": "error", "errorMsg":"缺少参数:houseId"}
+        else:
+            house_id = request.get_json().get("houseId", None)
+            if house_id is None:
+                response = {"status": "error", "errorMsg": "缺少参数:houseId"}
+            else:
+                result, msg = services.user.cancel_recommend(int(uid), int(house_id))
+                if result: jobs.remove_cancel_recommend_job(int(house_id))
+                response = {"status": "success"} if result else {"status": "error", "errorMsg": msg}
         return jsonify(response), 200
 
 
-
-
-@app.route("/api/house/detailed/<house_id>", methods = ["GET"])
-def house_detailed(house_id):
-
-    with app.app_context():
-        app.logger.warning(house_id)
-
-        
-        return jsonify(), 200
 
 @app.route("/api/group/manageable", methods = ["GET"])
 def group_manageable():
@@ -414,6 +586,11 @@ def group_remove():
                 elif not services.user.group_in(user, group):
                     response = {"status": "error", "errorMsg": "用户未在分组中"}
                 else:
+                    creator = services.group.get_creator(int(group_id))
+                    if creator is not None:
+                        houses = services.user.get_houses(user, group)
+                        for house in houses:
+                            services.house.change_owner(house, creator)
                     services.user.group_remove(user, group)
                     response = {"status": "success"}
         return jsonify(response), 200
@@ -469,3 +646,47 @@ def group_all():
             response = {"status": "success", "groups": groups}
         return jsonify(response), 200
 
+
+
+@app.route("/api/map/district/list", methods = ["GET"])
+def map_district_list():
+    if map.district_list == []:
+        response = {"status": "error", "errorMsg": "无可用数据"}
+    else:
+        response = {"status": "success", "district": map.district_list}
+    return jsonify(response), 200
+
+@app.route("/api/map/district/children", methods = ["POST"])
+def map_district_children():
+    if not request.data:
+        response = {"status": "error", "errorMsg": "缺少参数"}
+    else:
+        district_id = request.get_json().get("districtId", None)
+        if district_id is None:
+            response = {"status": "error", "errorMsg": "缺少参数"}
+        else:
+            result = map.map_district_get_children(id = district_id)
+            if result == {}:
+                response = {"status": "error", "errorMsg": "获取失败"}
+            else:
+                response = {"status": "success", "result": result}
+    return jsonify(response), 200
+
+@app.route("/api/map/geocoder", methods = ["POST"])
+def map_geocoder():
+    if not request.data:
+        response = {"status": "error", "errorMsg": "缺少参数"}
+    else:
+        # latitude: 纬度
+        # longitude: 经度
+        latitude = request.get_json().get("latitude", None)
+        longitude = request.get_json().get("longitude", None)
+        if latitude is None or longitude is None:
+            response = {"status": "error", "errorMsg": "缺少参数"}
+        else:
+            result = map.map_geocoder(latitude, longitude)
+            if result["status"] == 0:
+                response = {"status": "success", "result": result["result"]}
+            else:
+                response = {"status": "error", "errorMsg": result["message"]}
+    return jsonify(response), 200

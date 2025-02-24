@@ -14,12 +14,13 @@ class User(db.Model):
     nickname = Column(String(32), nullable = False, default = "未命名")
     avatar = Column(String(128), nullable = False, default = "")
     supervisor = Column(Boolean, nullable = False, default = False)
-    # administrator = Column(Boolean, nullable = False, default = False)  # 不再定义此属性，通过groups列表的role值动态判断
     groups = db.relationship("Group", secondary = "usergroupships", back_populates = "members")
-    houses = db.relationship("House", backref = db.backref("owner"))
+    houses = db.relationship("House", backref = db.backref("owner"), foreign_keys = "House.owner_id")
+    recommends = db.relationship("House", backref = db.backref("reference"), foreign_keys = "House.reference_id")
+    collections = db.relationship("House", secondary = "usercollectionships", back_populates = "collectors")
 
-    created_at = Column(DateTime, nullable = False, default = datetime.now(timezone.utc))
-    updated_at = Column(DateTime, nullable = False, default = datetime.now(timezone.utc), onupdate = datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable = False, default = datetime.now())
+    updated_at = Column(DateTime, nullable = False, default = datetime.now(), onupdate = datetime.now())
 
 class Group(db.Model):
     # 设置表名
@@ -73,6 +74,8 @@ class House(db.Model):
 
     owner_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable = False)
     group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable = False)
+    reference_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable = True)
+    collectors = db.relationship("User", secondary = "usercollectionships", back_populates = "collections")
 
     raw = Column(Text, nullable = False, default = "")
     created_at = Column('createdAt', DateTime, nullable=False, default=datetime.now())
@@ -87,5 +90,23 @@ class UserGroupShip(db.Model):
     user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key = True)
     group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), primary_key = True)
     role = Column(Integer, nullable = False, default = 0)  # 0-成员 1-管理员 2-创建者
+
+class UserCollectionShip(db.Model):
+    # 设置表名
+    __tablename__ = "usercollectionships"
+    # 设定字段
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key = True)
+    house_id = Column(BigInteger, ForeignKey("houses.id", ondelete="CASCADE"), primary_key = True)
+
+
+# 任务表
+class RecommendJob(db.Model):
+    # 设置表名
+    __tablename__ = "recommendjob"
+    # 设定字段
+    job_id = Column(BigInteger, primary_key = True, unique = True, nullable = True)
+    date = Column(DateTime, nullable = False)
+
+
 
 
