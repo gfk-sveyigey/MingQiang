@@ -22,6 +22,24 @@ def new(openid: str) -> User:
     db.session.commit()
     return new_user
 
+def deactivate(user: Union[int, User]) -> None:
+    from mingqiang import jobs
+    if type(user) == int:
+        user: User = get(user)
+    
+    for group in user.groups:
+        group_remove(user, group)
+
+    for collection in user.collections:
+        cancel_heart(user, collection)
+    for recommend in user.recommends:
+        jobs.remove_cancel_recommend_job(recommend.id)
+        cancel_recommend(user, recommend)
+    db.session.delete(user)
+    # User.query.filter(User == "ming").delete()
+    db.session.commit()
+    return
+
 def response(user: Union[int, User]) -> dict:
     if type(user) == int:
         user: User = get(user)
@@ -53,14 +71,27 @@ def group_join(user: Union[int, User], group: Union[int, Group]):
     db.session.commit()
     return
 
-def group_remove(user: Union[int, User], group: Union[int, Group]):
+def group_remove(user: Union[int, User], group: Union[int, Group]) -> tuple[int, str]:
     if type(user) == int:
         user: User = get(user)
     if type(group) == int:
         group: Group = services.group.get(group)
-    UserGroupShip.query.filter_by(user_id = user.id, group_id = group.id).delete()
-    db.session.commit()
-    return
+
+
+    if user is None or group is None :
+        return False, "参数错误"
+    elif not group_in(user, group):
+        return False, "未加入用户组"
+    else:
+        creator = services.group.get_creator(group)
+        if creator is not None:
+            houses = services.user.get_houses(user, group)
+            for house in houses:
+                services.house.change_owner(house, creator)
+    
+        UserGroupShip.query.filter_by(user_id = user.id, group_id = group.id).delete()
+        db.session.commit()
+        return True, ""
 
 def group_manageable(user: Union[int, User]) -> list:
     if type(user) == int:

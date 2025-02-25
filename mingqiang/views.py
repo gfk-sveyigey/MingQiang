@@ -1,4 +1,4 @@
-from flask import render_template, request, jsonify
+from flask import request, jsonify
 from mingqiang import app, map
 import json
 import random
@@ -126,6 +126,16 @@ def user_recommend_list():
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
+@app.route("/api/user/deactivate", methods = ["GET"])
+def user_deactivate():
+    with app.app_context():
+        uid = request.headers.get("Uid", None)
+        if uid is None:
+            response = {"status": "error", "errorMsg": "未登录"}
+        else:
+            services.user.deactivate(int(uid))
+            response = {"status": "success"}
+        return jsonify(response), 200
 
 # 未完成
 @app.route("/api/user/all", methods = ["GET", "POST"])
@@ -577,22 +587,11 @@ def group_remove():
             if user_id is None or group_id is None:
                 response = {"status": "error", "errorMsg": "缺少参数"}
             else:
-                user = services.user.get(int(user_id))
-                group = services.group.get(int(group_id))
-                if user is None:
-                    response = {"status": "error", "errorMsg": "用户不存在"}
-                elif group is None:
-                    response = {"status": "error", "errorMsg": "用户组不存在"}
-                elif not services.user.group_in(user, group):
-                    response = {"status": "error", "errorMsg": "用户未在分组中"}
-                else:
-                    creator = services.group.get_creator(int(group_id))
-                    if creator is not None:
-                        houses = services.user.get_houses(user, group)
-                        for house in houses:
-                            services.house.change_owner(house, creator)
-                    services.user.group_remove(user, group)
+                status, msg = services.user.group_remove(int(user_id), int(group_id))
+                if status:
                     response = {"status": "success"}
+                else:
+                    response = {"status": "error", "errorMsg": msg}
         return jsonify(response), 200
 
 # 暂未完成
