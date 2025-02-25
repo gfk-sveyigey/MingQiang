@@ -30,13 +30,9 @@ def deactivate(user: Union[int, User]) -> None:
     for group in user.groups:
         group_remove(user, group)
 
-    for collection in user.collections:
-        cancel_heart(user, collection)
     for recommend in user.recommends:
         jobs.remove_cancel_recommend_job(recommend.id)
-        cancel_recommend(user, recommend)
     db.session.delete(user)
-    # User.query.filter(User == "ming").delete()
     db.session.commit()
     return
 
@@ -178,7 +174,7 @@ def cancel_heart(user: Union[int, User], house: Union[int, House]) -> Tuple[bool
     collentions = [collention.id for collention in user.collections]
     if house.id not in collentions:
         return False, "无收藏记录"
-    UserCollectionShip.query.filter_by(user_id = user.id, house_id = house.id).delete()
+    UserCollectionShip.query.filter(User.id == user.id, House.id == house.id).delete()
     db.session.commit()
     return True, "取消成功"
 
