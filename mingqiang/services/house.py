@@ -210,41 +210,68 @@ def search(
             House.title.like(f"%{keyword}%"),
             House.office_name.like(f"%{keyword}%")
         ))
-    if region != "":
-        houses = houses.filter(House.address_region.like(f"%{region}%"))
+
+    # 房屋区域
+    if type(region) == str:
+        # 兼容旧版参数
+        if region != "":
+            region = region.replace(",不限", "")
+            houses = houses.filter(House.address_region.like(f"%{region}%"))
+    elif type(region) == list:
+        # 新版参数
+        if "不限" in region[-1] or len(region[-1]) == 0:
+            # 参数包含"不限"则移除末级所有选项，防止前端接口末级参数错误造成的搜索错误。
+            region.pop()
+        if len(region) > 0:
+            if type(region[-1]) == str:
+                # 为实现末项多选，应保证参数最后一项为列表。
+                region[-1] = [region[-1]]
+            houses = houses.filter(or_(*[House.address_region.like(f"%{item}%") for item in region[-1]]))
+
+    # 房屋类型
     if house_type != 0:
         houses = houses.filter(House.house_type == house_type)
+    # 租售类型
     if transaction_type != 0:
         houses = houses.filter(House.transaction_type == transaction_type)
+    # 房屋面积
     if area_min != 0:
-        houses = houses.filter(House.area_usable >= area_min)
+        houses = houses.filter(or_(
+            House.area_usable >= area_min,
+            House.area_building >= area_min
+        ))
     if area_max != 0 and area_max != area_min:
-        houses = houses.filter(House.area_usable <= area_max)
-    if transaction_type == 1:
+        houses = houses.filter(or_(
+            House.area_usable <= area_max,
+            House.area_building <= area_max
+        ))
+    # 房屋价格
+    if transaction_type == 1:  # 出售
         if price_min != 0:
             houses = houses.filter(House.sale_price >= price_min)
         if price_max != 0 and price_max != price_min:
             houses = houses.filter(House.sale_price <= price_max)
-    elif transaction_type == 2:
+    elif transaction_type == 2:  # 出租
         if price_min != 0:
             houses = houses.filter(House.rent_price >= price_min)
         if price_max != 0 and price_max != price_min:
             houses = houses.filter(House.rent_price <= price_max)
     else:
-        if price_min != 0:
-            houses = houses.filter(
-                or_(
-                    and_(House.transaction_type == 1, House.sale_price >= price_min),
-                    and_(House.transaction_type == 2, House.rent_price >= price_min),
-                )
-            )
-        if price_max != 0 and price_max != price_min:
-            houses = houses.filter(
-                or_(
-                    and_(House.transaction_type == 1, House.sale_price <= price_max),
-                    and_(House.transaction_type == 2, House.rent_price <= price_max),
-                )
-            )
+        # if price_min != 0:
+        #     houses = houses.filter(
+        #         or_(
+        #             and_(House.transaction_type == 1, House.sale_price >= price_min),
+        #             and_(House.transaction_type == 2, House.rent_price >= price_min),
+        #         )
+        #     )
+        # if price_max != 0 and price_max != price_min:
+        #     houses = houses.filter(
+        #         or_(
+        #             and_(House.transaction_type == 1, House.sale_price <= price_max),
+        #             and_(House.transaction_type == 2, House.rent_price <= price_max),
+        #         )
+        #     )
+        pass  # 全部类型时价格区间无效。
     if offset == 0:
         total = houses
         total_num = len(total.all())
