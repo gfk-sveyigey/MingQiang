@@ -8,7 +8,7 @@ from mingqiang import services, jobs
 
 @app.route("/api/login", methods = ["GET"])
 def login():
-    # 获取openid和session_key
+    # 获取openid
     openid = request.headers["X-Wx-Openid"]
 
     with app.app_context():
@@ -396,7 +396,9 @@ def house_search():
                 "transaction_type": house.transaction_type,
             } for house in houses]
         except Exception as e:
+            app.logger.warning(e)
             houses = []
+            total_num = -1
         response = {"status": "success", "houses": houses, "totalNum": total_num}
         return jsonify(response), 200
 
