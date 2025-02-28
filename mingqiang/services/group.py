@@ -12,6 +12,16 @@ def get_all() -> list:
     groups = Group.query.all()
     return groups
 
+def is_administrator(user: int|User, group: int|Group) -> bool:
+    if type(user) == int:
+        user: User = services.user.get(user)
+    if type(group) == int:
+        group: Group = get(group)
+
+    ugship: UserGroupShip = UserGroupShip.query.filter(User.id == user.id, Group.id == group.id).first()
+    role = ugship.role
+    return (role == 1 or role == 2)
+
 def response(group: Union[int, Group]) -> dict:
     if type(group) == int:
         group: Group = get(group)

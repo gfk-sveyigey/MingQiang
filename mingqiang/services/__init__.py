@@ -1,1 +1,1 @@
-from . import user, group, house, map
+from . import user, group, house, map, recommend

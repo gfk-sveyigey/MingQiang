@@ -210,12 +210,15 @@ def cancel_recommend(user: Union[int, User], house: Union[int, House]) -> Tuple[
     if type(house) == int:
         house: House = services.house.get(house)
 
-    if house.reference_id != user.id:
+    if house.reference_id == None:
         return False, "无推荐记录"
-    else:
+    elif user.supervisor or services.group.is_administrator(user, house.group_id) or house.owner_id == user.id:
         house.reference_id = None
         db.session.commit()
         return True, "取消成功"
+    else:
+        return False, "无推荐记录"
+
 
 def recommend_list(user: Union[int, User]) -> list:
     if type(user) == int:

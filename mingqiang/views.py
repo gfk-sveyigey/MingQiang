@@ -122,6 +122,7 @@ def user_recommend_list():
                 "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
                 "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
                 "transaction_type": house.transaction_type,
+                "remaining": services.recommend.get_remaining(house),
             } for house in houses]
             response = {"status": "success", "houses": houses}
         return jsonify(response), 200
@@ -157,7 +158,6 @@ def house_detail(house_id):
         else:
             detail = services.house.detail(house, int(uid))
             response = {"status": "success", "detail": detail}
-            # response = {"status": "error", "errorMsg": "Id无效"}
         
         return jsonify(response), 200
 
@@ -196,22 +196,26 @@ def house_onsale():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
-            response = {"status": "error", "errorMsg": "无查询权限"}
         else:
-            houses = services.house.get_onsale(int(uid))
-            houses = [{
-                "id": str(house.id),
-                "cover": json.loads(house.images)[0]["filePath"],
-                "title": house.title,
-                "area": str(house.area_building),
-                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
-                "price": f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元",
-                "transaction_type": house.transaction_type,
-                "recommended": 1 if house.reference_id == int(uid) else 2,
-            } for house in houses]
-            houses.reverse()
-            response = {"status": "success", "houses": houses}
+            user = services.user.get(int(uid))
+            if not services.user.is_administrator(user) and not user.supervisor and len(user.groups) == 0:
+                response = {"status": "error", "errorMsg": "无查询权限"}
+            else:
+                houses = services.house.get_onsale(int(uid))
+                houses = [{
+                    "id": str(house.id),
+                    "cover": json.loads(house.images)[0]["filePath"],
+                    "title": house.title,
+                    "area": str(house.area_building),
+                    "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+                    "price": f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元",
+                    "transaction_type": house.transaction_type,
+                    "recommended": 1 if house.reference_id == int(uid) else 2,
+                    "recommended": 1 if house.reference_id != None else 2,
+                    "reference": None if house.reference_id == None else (user.nickname if house.reference_id == user.id else services.user.get(house.reference_id).nickname),
+                } for house in houses]
+                houses.reverse()
+                response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
 @app.route("/api/house/onrent", methods = ["GET"])
@@ -220,22 +224,27 @@ def house_onrent():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
-            response = {"status": "error", "errorMsg": "无查询权限"}
         else:
-            houses = services.house.get_onrent(int(uid))
-            houses = [{
-                "id": str(house.id),
-                "cover": json.loads(house.images)[0]["filePath"],
-                "title": house.title,
-                "area": str(house.area_building),
-                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
-                "price": f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月",
-                "transaction_type": house.transaction_type,
-                "recommended": 1 if house.reference_id == int(uid) else 2,
-            } for house in houses]
-            houses.reverse()
-            response = {"status": "success", "houses": houses}
+            user = services.user.get(int(uid))
+            if not services.user.is_administrator(user) and not user.supervisor and len(user.groups) == 0:
+                response = {"status": "error", "errorMsg": "无查询权限"}
+            else:
+                houses = services.house.get_onrent(int(uid))
+                houses = [{
+                    "id": str(house.id),
+                    "cover": json.loads(house.images)[0]["filePath"],
+                    "title": house.title,
+                    "area": str(house.area_building),
+                    "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+                    "price": f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月",
+                    "transaction_type": house.transaction_type,
+                    # "recommended": 1 if house.reference_id == int(uid) else 2,
+                    # "recommended": 1 if house.reference_id == user.id else (1 if ((user.supervisor or services.group.is_administrator(user, house.group_id)) and house.reference_id != None) else 2),
+                    "recommended": 1 if house.reference_id != None else 2,
+                    "reference": None if house.reference_id == None else (user.nickname if house.reference_id == user.id else services.user.get(house.reference_id).nickname),
+                } for house in houses]
+                houses.reverse()
+                response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
 @app.route("/api/house/removed", methods = ["GET"])
@@ -244,22 +253,23 @@ def house_removed():
         uid = request.headers.get("Uid", None)
         if uid is None:
             response = {"status": "error", "errorMsg": "无查询权限"}
-        elif not services.user.is_administrator(int(uid)) and not services.user.get(int(uid)).supervisor and len(services.user.get(int(uid)).groups) == 0:
-            response = {"status": "error", "errorMsg": "无查询权限"}
         else:
-            houses = services.house.get_removed(int(uid))
-            houses = [{
-                "id": str(house.id),
-                "cover": json.loads(house.images)[0]["filePath"],
-                "title": house.title,
-                "area": str(house.area_building),
-                "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
-                "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
-                "transaction_type": house.transaction_type,
-                "recommended": 1 if house.reference_id == int(uid) else 2
-            } for house in houses]
-            houses.reverse()
-            response = {"status": "success", "houses": houses}
+            user = services.user.get(int(uid))
+            if not services.user.is_administrator(user) and not user.supervisor and len(user.groups) == 0:
+                response = {"status": "error", "errorMsg": "无查询权限"}
+            else:
+                houses = services.house.get_removed(int(uid))
+                houses = [{
+                    "id": str(house.id),
+                    "cover": json.loads(house.images)[0]["filePath"],
+                    "title": house.title,
+                    "area": str(house.area_building),
+                    "region": house.office_name if (house.house_type == 2) else (house.address_region.split(",")[3] if len(house.address_region.split(",")) > 3 else house.address_region.split(",")[2]),
+                    "price": (f"{house.sale_price}万元" if house.sale_price > 1 else f"{int(house.sale_price*10000)}元") if house.transaction_type == 1 else (f"{house.rent_price}万元/月" if house.rent_price > 1 else f"{int(house.rent_price*10000)}元/月"),
+                    "transaction_type": house.transaction_type,
+                } for house in houses]
+                houses.reverse()
+                response = {"status": "success", "houses": houses}
         return jsonify(response), 200
 
 @app.route("/api/house/remove", methods = ["POST"])
